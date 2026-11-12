@@ -40,7 +40,7 @@ button{font:inherit}
 @keyframes yu{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-70px)}}
 
 .reward-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(7,15,35,.72);backdrop-filter:blur(5px);animation:rewardFade .25s ease-out}.reward-overlay[hidden]{display:none!important}.reward-card{position:relative;width:min(100%,390px);overflow:hidden;text-align:center;color:#fff;background:linear-gradient(145deg,#203963,#101c36);border:2px solid #eec75c;border-radius:25px;padding:32px 20px 23px;box-shadow:0 18px 60px #0008,0 0 32px #f8d45c44;animation:rewardPop .45s cubic-bezier(.2,1.5,.4,1)}.reward-stars{font-size:28px;letter-spacing:12px;animation:rewardShine 1.2s ease-in-out infinite alternate}.reward-title{color:#ffdc70;font-weight:900;font-size:24px;letter-spacing:2px;margin:10px 0}.reward-points{font-weight:950;font-size:clamp(55px,16vw,78px);line-height:1.2;color:#ffdc70;text-shadow:0 3px 18px #f9be4c66}.reward-name{font-size:19px;font-weight:800;margin:12px 0;overflow-wrap:anywhere}.reward-caption{font-size:14px;color:#dce8ff}.reward-progress{height:5px;border-radius:10px;background:#50607c;overflow:hidden;margin:22px 0 0}.reward-progress>div{height:100%;width:100%;background:#ffdc70;transform-origin:left;animation:rewardCountdown var(--rd,15s) linear forwards}.reward-dismiss{margin-top:13px;background:none;border:0;color:#dce8ff;font-size:13px;padding:8px 15px;cursor:pointer}@keyframes rewardFade{from{opacity:0}to{opacity:1}}@keyframes rewardPop{from{opacity:0;transform:scale(.7) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}@keyframes rewardShine{from{opacity:.55;transform:scale(.95)}to{opacity:1;transform:scale(1.1)}}@keyframes rewardCountdown{to{transform:scaleX(0)}}@media(prefers-reduced-motion:reduce){.reward-overlay,.reward-card,.reward-stars,.reward-progress>div{animation:none}}
-.reward-caption{white-space:pre-line}.reward-points.sm{font-size:clamp(40px,12vw,56px)}</style></head><body>
+.reward-caption{white-space:pre-line}.reward-points.sm{font-size:clamp(40px,12vw,56px)}#goBtn:disabled,#finBtn:disabled{background:#c5cad3;border-color:#c5cad3;color:#fff;opacity:1}.reward-target{color:#dce8ff;font-size:17px;font-weight:800;margin:-4px 0 8px}.reward-cert{display:block;width:100%;margin-top:12px;min-height:50px;border:0;border-radius:14px;background:linear-gradient(#ffdc70,#e0a100);color:#3a2700;font-weight:900;font-size:17px}</style></head><body>
 <header><img src="icon-64.png" alt="" width="34" height="34" style="border-radius:8px;background:#fff"><b>Rally GP</b><span class="tag">ソロ</span></header>
 <div id="toast"></div>
 <main>
@@ -54,24 +54,6 @@ button{font:inherit}
     <div class="strip" id="strip"></div>
   </div>
 
-
-  <div id="runCard" class="card hide">
-    <h2 id="runTitle">SS</h2>
-    <div class="blink" id="runState">⏱ 計測中</div>
-    <div class="timer" id="runSpeed">0<small> km/h</small></div>
-    <div class="muted" style="text-align:center" id="runInfo"></div>
-    <button id="runCancel" class="btn r" style="width:100%;margin-top:10px">計測をやめる</button>
-  </div>
-
-  <div id="goCard" class="card hide">
-    <h2 id="goTitle">SS</h2>
-    <div id="goInfo" class="muted"></div>
-    <button id="goBtn" class="btn g" style="width:100%;margin-top:10px">⏱ 計測スタート</button>
-  </div>
-
-  <div id="resCard" class="card hide"><h2>今日の結果</h2><div id="res"></div></div>
-
-  <div id="finCard" class="card hide" style="border:2px solid var(--g);text-align:center"><div id="finHint" class="muted" style="margin-bottom:8px"></div><button id="finBtn" class="btn g" style="width:100%;min-height:60px;font-size:20px" disabled>🏁 ゴール</button></div>
   <div id="yaeCard" class="card hide" style="border:2px solid var(--b);text-align:center">
     <h2 id="yTitle">🖐 ヤエー</h2>
     <p id="yHint" class="muted">SSが終わると使えます。</p>
@@ -80,17 +62,41 @@ button{font:inherit}
     <button id="yBack" class="btn g" type="button" style="width:100%;margin-top:14px;min-height:56px;font-size:19px">🏠 ミッションに戻る</button>
   </div>
 
+  <div id="goCard" class="card hide">
+    <h2 id="goTitle">SS</h2>
+    <div id="goInfo" class="muted"></div>
+    <button id="goBtn" class="btn g" style="width:100%;margin-top:10px">⏱ 計測スタート</button>
+  </div>
+
+  <div id="runCard" class="card hide">
+    <h2 id="runTitle">SS</h2>
+    <div class="blink" id="runState">⏱ 計測中</div>
+    <div class="timer" id="runSpeed">0<small> km/h</small></div>
+    <div id="runSet" style="text-align:center;font-size:20px;font-weight:800;color:#1f3a63"></div>
+    <div class="muted" style="text-align:center" id="runInfo"></div>
+    <button id="runCancel" class="btn r" style="width:100%;margin-top:10px">計測をやめる</button>
+  </div>
+
   <div class="card">
     <div id="tapBar" class="hide"></div>
     <div style="display:flex;gap:8px;margin-bottom:8px"><button id="loc" class="btn" style="flex:1">📍 現在地へ</button><button id="fit" class="btn" style="flex:1">全体を見る</button></div>
     <div id="map"></div>
     <div id="gpsmsg" class="muted" style="margin-top:6px">現在地を測っています…</div>
   </div>
+
+  <div id="finCard" class="card hide" style="border:2px solid var(--g);text-align:center"><div id="finHint" class="muted" style="margin-bottom:8px"></div><button id="finBtn" class="btn g" style="width:100%;min-height:60px;font-size:20px" disabled>🏁 ゴール</button>
+    <button id="certBtn" class="btn hide" type="button" style="width:100%;margin-top:10px">🏅 完走証明を見る</button></div>
+
   <div id="setup" class="card">
     <button id="setupBtn" class="btn" style="width:100%"></button>
+    <div id="profBox" class="hide" style="margin-top:10px"><label class="muted" for="nick">ニックネーム</label><input id="nick" maxlength="20" placeholder="例：くに" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin:2px 0 8px"><label class="muted" for="veh">車両名</label><input id="veh" maxlength="30" placeholder="例：CB400SF" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin:2px 0 4px"></div>
     <div id="steps" class="hide" style="margin-top:8px"></div>
   </div>
+
+  <div id="resCard" class="card hide"><h2>今日の結果</h2><div id="res"></div></div>
+
   <div class="card"><button id="reset" class="btn r" style="width:100%">今日の記録をリセットする</button></div>
+
 </main>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -136,7 +142,7 @@ $('toast').onclick = () => { $('toast').style.display = 'none'; };
 /* 得点のポップアップ：Rally TT と同じ「POINT GET!」の見た目。各ポイントは15秒で消えます。ゴールだけは、ボタンを押すまで消えません */
 const ovQ = [];
 let ovEl = null, ovT = null;
-function pop(name, pts, caption, sticky, goal) { ovQ.push({ name, pts, caption, sticky, goal }); if (!ovEl) nextPop(); }
+function pop(name, pts, caption, sticky, goal, tgt) { ovQ.push({ name, pts, caption, sticky, goal, tgt }); if (!ovEl) nextPop(); }
 function nextPop() {
   clearTimeout(ovT); if (ovEl) { ovEl.remove(); ovEl = null; }
   const x = ovQ.shift(); if (!x) return;
@@ -144,12 +150,207 @@ function nextPop() {
   const o = mk('reward-overlay'), card = mk('reward-card');
   const sc = mk('reward-points' + (x.goal ? ' sm' : ''), x.goal ? '合計 ' + r1(x.pts) + ' pt' : '+' + r1(x.pts) + ' pt');
   const cap = mk('reward-caption', x.caption || (x.goal ? '' : '🎉 ポイント獲得おめでとう！'));
-  card.append(mk('reward-stars', '✦ ✨ ✦'), mk('reward-title', x.goal ? 'GOAL!' : 'POINT GET!'), sc, mk('reward-name', x.name), cap);
+  card.append(mk('reward-stars', '✦ ✨ ✦'), mk('reward-title', x.goal ? 'GOAL!' : 'POINT GET!'), sc); if (x.goal) card.appendChild(mk('reward-target', '目標ポイント ' + r1(x.tgt) + ' pt')); card.append(mk('reward-name', x.name), cap);
+  if (x.goal) { const cb = mk('reward-cert', '🏅 完走証明を発行', 'button'); cb.type = 'button'; cb.onclick = showCertificate; card.appendChild(cb); }
   if (!x.sticky) { const pr = mk('reward-progress'); const d = document.createElement('div'); d.style.setProperty('--rd', '15s'); pr.appendChild(d); card.appendChild(pr); }
   const cl = mk('reward-dismiss', x.sticky ? '閉じる' : 'タップして閉じる', 'button'); cl.type = 'button'; cl.onclick = nextPop; card.appendChild(cl);
   o.appendChild(card); if (!x.sticky) o.addEventListener('click', e => { if (e.target === o) nextPop(); });
   document.body.appendChild(o); ovEl = o; try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) { /* noop */ }
   if (!x.sticky) ovT = setTimeout(nextPop, 15000);
+}
+
+/* ---------- 完走証明（Rally TT の完走証明のデザイン・チェッカーフラッグ版） ---------- */
+    function fitText(ctx, text, maxW, size, weight, min) {
+      let sz = size;
+      do { ctx.font = weight + ' ' + sz + 'px "Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif'; if (ctx.measureText(text).width <= maxW) break; sz -= 2; } while (sz > (min || 20));
+      return sz;
+    }
+    function arcText(x, text, cx, cy, r, centerAngle, size, spacing) {
+      // 円の上側に沿って文字を並べる（centerAngle=-π/2 で真上）
+      x.save(); x.font = '800 ' + size + 'px "Hiragino Sans","Noto Sans JP",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      const ws = Array.from(text).map(ch => x.measureText(ch).width + spacing), tot = ws.reduce((a, b) => a + b, 0) - spacing;
+      let ang = centerAngle - (tot / r) / 2;
+      Array.from(text).forEach((ch, i) => {
+        const w = ws[i] - spacing, th = ang + (w / 2) / r;
+        x.save(); x.translate(cx + r * Math.cos(th), cy + r * Math.sin(th)); x.rotate(th + Math.PI / 2);
+        x.fillStyle = 'rgba(255,238,170,.55)'; x.fillText(ch, 0, 1.5);
+        x.fillStyle = '#4a2f05'; x.fillText(ch, 0, 0); x.restore();
+        ang += ws[i] / r;
+      });
+      x.restore();
+    }
+    function laurel(x, cx, cy, r, from, to, dir) {
+      // 月桂樹の枝（from→to の角度に沿って葉を並べる）
+      const n = 15;
+      for (let i = 0; i <= n; i++) {
+        const t = from + (to - from) * (i / n), px = cx + r * Math.cos(t), py = cy + r * Math.sin(t);
+        const tan = t + (to > from ? Math.PI / 2 : -Math.PI / 2), sz = 30 - i * 0.6;
+        for (const side of [-1, 1]) {
+          x.save(); x.translate(px + side * 15 * Math.cos(t), py + side * 15 * Math.sin(t));
+          x.rotate(tan + side * dir * 0.7);
+          const g = x.createLinearGradient(0, -sz, 0, sz); g.addColorStop(0, '#f6dc86'); g.addColorStop(1, '#a5721a');
+          x.fillStyle = g; x.strokeStyle = 'rgba(70,42,4,.7)'; x.lineWidth = 1.5;
+          x.beginPath(); x.ellipse(0, 0, 8, sz, 0, 0, Math.PI * 2); x.fill(); x.stroke();
+          x.beginPath(); x.moveTo(0, -sz * .8); x.lineTo(0, sz * .8); x.stroke(); x.restore();
+        }
+      }
+    }
+    /* 大会の種類ごとの、完走証明の中央の絵（独自デザインの金色ライン）。bike は従来の画像。 */
+    function kindEmblem(x, cx, cy, kind) {
+      x.save(); x.translate(cx, cy); x.scale(.85, .85); x.lineCap = 'round'; x.lineJoin = 'round';
+      const g = x.createLinearGradient(-170, -110, 170, 90);
+      g.addColorStop(0, '#fff0b0'); g.addColorStop(.5, '#d9a62e'); g.addColorStop(1, '#8a5d12');
+      const dark = '#0b0c0f', fillG = 'rgba(214,170,62,.28)';
+      // 後光
+      x.strokeStyle = 'rgba(230,190,90,.22)'; x.lineWidth = 2;
+      for (let i = 0; i < 28; i++) { const a = -Math.PI + (i / 27) * Math.PI; x.beginPath(); x.moveTo(40 * Math.cos(a), -20 + 40 * Math.sin(a)); x.lineTo(210 * Math.cos(a), -20 + 150 * Math.sin(a)); x.stroke(); }
+      const road = () => { x.strokeStyle = g; x.lineWidth = 5; x.beginPath(); x.moveTo(-200, 100); x.quadraticCurveTo(-190, 62, -120, 54); x.lineTo(130, 54); x.quadraticCurveTo(190, 62, 200, 100); x.stroke(); };
+      const wheel = (wx, wy, r) => { x.fillStyle = dark; x.strokeStyle = g; x.lineWidth = 8; x.beginPath(); x.arc(wx, wy, r, 0, 7); x.fill(); x.stroke(); x.lineWidth = 3; x.beginPath(); x.arc(wx, wy, r * .38, 0, 7); x.stroke(); };
+      x.strokeStyle = g; x.fillStyle = g;
+      if (kind === 'car') {
+        road();
+        // 車体
+        x.lineWidth = 6; x.fillStyle = fillG; x.strokeStyle = g; x.beginPath();
+        x.moveTo(-180, 44); x.lineTo(-170, 6); x.quadraticCurveTo(-150, -4, -110, -8); x.lineTo(-62, -52); x.quadraticCurveTo(-48, -64, -24, -64);
+        x.lineTo(60, -64); x.quadraticCurveTo(86, -64, 102, -44); x.lineTo(128, -8); x.quadraticCurveTo(170, -4, 180, 14); x.lineTo(182, 44); x.closePath(); x.fill(); x.stroke();
+        // 窓
+        x.lineWidth = 4; x.fillStyle = dark; x.beginPath(); x.moveTo(-82, -12); x.lineTo(-46, -48); x.lineTo(-10, -48); x.lineTo(-10, -12); x.closePath(); x.fill(); x.stroke();
+        x.beginPath(); x.moveTo(6, -12); x.lineTo(6, -48); x.lineTo(56, -48); x.quadraticCurveTo(70, -48, 80, -36); x.lineTo(98, -12); x.closePath(); x.fill(); x.stroke();
+        x.lineWidth = 3; x.beginPath(); x.moveTo(-10, -12); x.lineTo(6, -12); x.stroke();
+        // ライト・ライン
+        x.fillStyle = g; x.beginPath(); x.ellipse(166, 18, 12, 7, 0, 0, 7); x.fill(); x.beginPath(); x.ellipse(-170, 20, 8, 6, 0, 0, 7); x.fill();
+        x.lineWidth = 4; x.beginPath(); x.moveTo(-160, 30); x.lineTo(150, 30); x.stroke();
+        wheel(-100, 46, 38); wheel(112, 46, 38);
+      } else if (kind === 'bicycle') {
+        road();
+        const rw = [-115, 52], fw = [105, 52];
+        wheel(rw[0], rw[1], 56); wheel(fw[0], fw[1], 56);
+        // フレーム
+        x.strokeStyle = g; x.lineWidth = 7; x.beginPath();
+        x.moveTo(rw[0], rw[1]); x.lineTo(-30, 52); x.lineTo(-62, -28); x.lineTo(rw[0], rw[1]); x.moveTo(-62, -28); x.lineTo(52, -34); x.lineTo(-30, 52); x.moveTo(52, -34); x.lineTo(fw[0], fw[1]); x.stroke();
+        x.lineWidth = 6; x.beginPath(); x.moveTo(52, -34); x.lineTo(60, -60); x.lineTo(92, -62); x.stroke();
+        x.lineWidth = 8; x.beginPath(); x.moveTo(-76, -34); x.lineTo(-48, -36); x.stroke();
+        // ライダー
+        x.lineWidth = 20; x.beginPath(); x.moveTo(-60, -44); x.quadraticCurveTo(-10, -86, 50, -80); x.stroke();
+        x.lineWidth = 11; x.beginPath(); x.moveTo(44, -80); x.lineTo(86, -62); x.stroke();
+        x.lineWidth = 12; x.beginPath(); x.moveTo(-52, -40); x.lineTo(-18, 6); x.lineTo(-30, 52); x.stroke();
+        x.fillStyle = g; x.beginPath(); x.arc(70, -104, 20, 0, 7); x.fill();
+        x.fillStyle = dark; x.beginPath(); x.ellipse(80, -102, 10, 6, -0.2, 0, 7); x.fill();
+      } else if (kind === 'walk') {
+        // 山と道
+        x.lineWidth = 5; x.fillStyle = 'rgba(214,170,62,.18)'; x.strokeStyle = g;
+        x.beginPath(); x.moveTo(-205, 100); x.lineTo(-110, -36); x.lineTo(-62, 28); x.lineTo(14, -78); x.lineTo(120, 100); x.closePath(); x.fill(); x.stroke();
+        x.beginPath(); x.moveTo(-40, 100); x.quadraticCurveTo(0, 60, 60, 56); x.quadraticCurveTo(150, 52, 205, 100); x.stroke();
+        // 歩く人
+        x.lineWidth = 15; x.strokeStyle = g; x.beginPath(); x.moveTo(-14, -52); x.lineTo(-6, 6); x.stroke();                     // 胴
+        x.beginPath(); x.moveTo(-6, 6); x.lineTo(-40, 62); x.lineTo(-58, 98); x.moveTo(-6, 6); x.lineTo(22, 54); x.lineTo(30, 98); x.stroke(); // 脚
+        x.lineWidth = 12; x.beginPath(); x.moveTo(-12, -40); x.lineTo(24, -10); x.lineTo(58, -2); x.stroke();                       // 前の腕
+        x.beginPath(); x.moveTo(-14, -40); x.lineTo(-44, -6); x.stroke();                                                         // 後ろの腕
+        x.lineWidth = 6; x.beginPath(); x.moveTo(58, -2); x.lineTo(76, 98); x.stroke();                                           // ストック
+        x.fillStyle = fillG; x.lineWidth = 5; x.beginPath(); x.roundRect ? x.roundRect(-52, -52, 30, 54, 10) : x.rect(-52, -52, 30, 54); x.fill(); x.stroke(); // リュック
+        x.fillStyle = g; x.beginPath(); x.arc(-4, -80, 20, 0, 7); x.fill();
+        x.lineWidth = 5; x.beginPath(); x.moveTo(-26, -90); x.lineTo(22, -92); x.stroke(); // 帽子のつば
+      } else {
+        // 汎用: チェッカーフラッグとゴールライン
+        road();
+        x.lineWidth = 8; x.strokeStyle = g; x.beginPath(); x.moveTo(-96, 100); x.lineTo(-96, -108); x.stroke();
+        x.beginPath(); x.moveTo(96, 100); x.lineTo(96, -108); x.stroke();
+        x.fillStyle = g; x.beginPath(); x.arc(-96, -112, 9, 0, 7); x.fill(); x.beginPath(); x.arc(96, -112, 9, 0, 7); x.fill();
+        // 旗（波打つ）
+        const cols = 8, rows = 4, W = 192, H = 100, X0 = -96, Y0 = -96;
+        const wave = (u, v) => [X0 + u * W, Y0 + v * H + Math.sin(u * Math.PI * 2) * 9];
+        for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+          const p = [wave(i / cols, j / rows), wave((i + 1) / cols, j / rows), wave((i + 1) / cols, (j + 1) / rows), wave(i / cols, (j + 1) / rows)];
+          x.beginPath(); x.moveTo(p[0][0], p[0][1]); for (let k = 1; k < 4; k++) x.lineTo(p[k][0], p[k][1]); x.closePath();
+          x.fillStyle = ((i + j) % 2 === 0) ? g : dark; x.fill();
+        }
+        x.lineWidth = 4; x.strokeStyle = g; x.beginPath(); x.moveTo(wave(0, 0)[0], wave(0, 0)[1]);
+        for (let u = 0; u <= 1.001; u += .05) { const p = wave(u, 0); x.lineTo(p[0], p[1]); }
+        for (let u = 1; u >= -0.001; u -= .05) { const p = wave(u, 1); x.lineTo(p[0], p[1]); }
+        x.closePath(); x.stroke();
+      }
+      x.restore();
+    }
+    function drawMedal(c, W, H) {
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const x = cv.getContext('2d'), cx = W / 2, cy = 600, RO = 480, W_RING = 104, RM = RO - W_RING / 2, RI = RO - W_RING;
+      const FONT = '"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif';
+      // 背景（黒・金のきらめき）
+      x.fillStyle = '#07080a'; x.fillRect(0, 0, W, H);
+      let g = x.createRadialGradient(cx, cy, 100, cx, cy, 760); g.addColorStop(0, 'rgba(120,90,30,.28)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(0, 0, W, H);
+      let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(240,205,120,' + (0.15 + rnd() * 0.5) + ')'; x.beginPath(); x.arc(rnd() * W, rnd() * 1100, 0.6 + rnd() * 1.8, 0, 7); x.fill(); }
+      // 内側の黒い面
+      x.fillStyle = '#0c0d10'; x.beginPath(); x.arc(cx, cy, RO - 4, 0, 7); x.fill();
+      // 金のリング（下が開いたリング）
+      const gap = 0.52, a0 = Math.PI / 2 + gap, a1 = Math.PI / 2 - gap + Math.PI * 2;
+      x.save(); x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = 30; x.shadowOffsetY = 12;
+      g = x.createLinearGradient(cx - RO, cy - RO, cx + RO, cy + RO);
+      [[0, '#7a5210'], [.18, '#f6dc86'], [.35, '#b8801a'], [.5, '#ffeaa6'], [.68, '#8a5d12'], [.85, '#e2b441'], [1, '#6e4a0e']].forEach(s => g.addColorStop(s[0], s[1]));
+      x.strokeStyle = g; x.lineWidth = W_RING; x.lineCap = 'butt'; x.beginPath(); x.arc(cx, cy, RM, a0, a1); x.stroke(); x.restore();
+      for (const [rr, col, lw] of [[RO - 2, '#ffe9a0', 4], [RO - W_RING + 2, '#f3cf6a', 4], [RM + W_RING / 2 - 14, 'rgba(70,42,4,.55)', 2], [RM - W_RING / 2 + 14, 'rgba(70,42,4,.55)', 2]]) {
+        x.strokeStyle = col; x.lineWidth = lw; x.beginPath(); x.arc(cx, cy, rr, a0, a1); x.stroke();
+      }
+      // 下の銘板（リングの切れ目を埋める黒い板と金の縁）
+      x.save(); x.beginPath(); x.arc(cx, cy, RO - 4, 0, 7); x.clip(); x.fillStyle = '#0c0d10'; x.fillRect(cx - 250, 944, 500, 160);
+      x.strokeStyle = 'rgba(214,170,62,.5)'; x.lineWidth = 2; x.beginPath(); x.moveTo(cx - 250, 944); x.lineTo(cx + 250, 944); x.stroke(); x.restore();
+      x.strokeStyle = g; x.lineWidth = 7; x.beginPath(); x.arc(cx, cy, RO - 3, a1 - Math.PI * 2, a0); x.stroke();
+      // 文字（リング上）と月桂樹
+      arcText(x, 'RALLY  GP  SOLO', cx, cy, RM, -Math.PI / 2, 46, 8);
+      laurel(x, cx, cy, RM, Math.PI * 0.72, Math.PI * 1.13, 1);
+      laurel(x, cx, cy, RM, Math.PI * 0.28, -Math.PI * 0.13, -1);
+      x.textAlign = 'center';
+      const gold = x.createLinearGradient(0, 400, 0, 470); gold.addColorStop(0, '#fff0b0'); gold.addColorStop(.5, '#e4b840'); gold.addColorStop(1, '#a8741a');
+      // 大会名
+      x.fillStyle = '#e9d9a8'; const en = c.event_name || ''; fitText(x, en, 560, 36, '600', 20); x.fillText(en, cx, 352);
+      // 完走証明
+      x.fillStyle = gold; x.font = '800 118px ' + FONT; x.fillText('完走証明', cx, 470);
+      kindEmblem(x, cx, 588, 'generic');
+      const tagText = 'SOLO TOURING CHALLENGE';
+      const tagSz = fitText(x, tagText, 560, 30, '700', 16);
+      x.fillStyle = '#e9d9a8'; x.font = '700 ' + tagSz + 'px ' + FONT; x.fillText(tagText, cx, 744);
+      x.strokeStyle = 'rgba(214,170,62,.6)'; x.lineWidth = 2; x.beginPath(); x.moveTo(cx - 230, 766); x.lineTo(cx + 230, 766); x.stroke();
+      // 本人情報
+      x.fillStyle = '#fff'; const nn = c.nickname || ''; fitText(x, nn, 480, 50, '800', 28); x.fillText(nn, cx, 822);
+      x.fillStyle = '#d9dde4'; const l2 = c.vehicle || ''; fitText(x, l2, 480, 32, '600', 20); x.fillText(l2, cx, 862);
+      x.fillStyle = gold; x.font = '800 40px ' + FONT; x.fillText(String(r1(c.points)) + ' pt', cx, 908);
+      // 下の銘板: 日付・証明書番号
+      x.fillStyle = '#e9d9a8'; x.font = '700 22px ' + FONT; x.fillText('SUCCESSFULLY COMPLETED ON', cx, 974);
+      let d = String(c.event_day || ''); try { const t = new Date(d + 'T00:00:00+09:00'); d = t.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Tokyo' }).toUpperCase(); } catch (e) { /* noop */ }
+      x.fillStyle = gold; x.font = '800 34px ' + FONT; x.fillText(d, cx, 1011);
+      x.fillStyle = '#9aa1ad'; x.font = '500 18px ' + FONT; x.fillText('RALLY GP  |  ' + (c.cert_no || ''), cx, 1038);
+      return cv;
+    }
+    function drawCertificate(c) {
+      const W = 1080, H = 1620, top = drawMedal(c, W, 1120), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const x = cv.getContext('2d'); x.fillStyle = '#07080a'; x.fillRect(0, 0, W, H);
+      x.drawImage(top, 0, 0);
+      // 床への映り込み
+      x.save(); x.translate(0, 1120 + 1120 - 20); x.scale(1, -1); x.globalAlpha = .32; x.drawImage(top, 0, 0); x.restore();
+      const g = x.createLinearGradient(0, 1120, 0, H); g.addColorStop(0, 'rgba(7,8,10,.45)'); g.addColorStop(.7, 'rgba(7,8,10,.96)'); g.addColorStop(1, '#07080a');
+      x.fillStyle = g; x.fillRect(0, 1120, W, H - 1120);
+      return cv;
+    }
+
+function showCertificate() {
+  const nick = ($('nick').value || '').trim() || 'ライダー', veh = ($('veh').value || '').trim();
+  const c = { event_name: 'RALLY GP', nickname: nick, vehicle: veh, points: total(), event_day: day.d, cert_no: 'GP-' + day.d.replace(/-/g, '') };
+  const cv = drawCertificate(c), url = cv.toDataURL('image/png');
+  const old = $('certPop'); if (old) old.remove();
+  const pop = document.createElement('div'); pop.id = 'certPop'; pop.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.86);overflow:auto;padding:16px;box-sizing:border-box';
+  const w = document.createElement('div'); w.style.cssText = 'max-width:460px;margin:0 auto';
+  const t = document.createElement('p'); t.style.cssText = 'color:#fff;text-align:center;font-weight:800;margin:4px 0 10px'; t.textContent = '🏅 完走おめでとうございます！';
+  const img = document.createElement('img'); img.src = url; img.alt = '完走証明'; img.style.cssText = 'width:100%;max-width:420px;border-radius:12px;display:block;margin:0 auto;-webkit-touch-callout:default';
+  const sv = document.createElement('button'); sv.type = 'button'; sv.className = 'btn g'; sv.style.cssText = 'width:100%;margin-top:12px'; sv.textContent = '⬇ 画像を保存';
+  sv.onclick = () => cv.toBlob(async blob => {
+    if (!blob) return; const file = new File([blob], 'rally-gp-' + day.d + '.png', { type: 'image/png' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }, 'image/png');
+  const hint = document.createElement('p'); hint.style.cssText = 'color:#cfd5df;font-size:13px;text-align:center;margin:8px 0'; hint.textContent = '保存できないときは、画像を長押しして「写真に追加」を選んでください。';
+  const cl = document.createElement('button'); cl.type = 'button'; cl.className = 'btn'; cl.style.cssText = 'width:100%'; cl.textContent = '閉じる'; cl.onclick = () => pop.remove();
+  w.append(t, img, sv, hint, cl); pop.appendChild(w); document.body.appendChild(pop);
 }
 
 /* ---------- 地図 ---------- */
@@ -208,9 +409,12 @@ async function onTap(lat, lon) {
 }
 const btnS = 'style="min-height:40px;font-size:14px;padding:0 10px"';
 let setupOpen = null;
+try { const p = JSON.parse(localStorage.getItem('sampleTT_profile') || 'null'); if (p) { $('nick').value = p.nick || ''; $('veh').value = p.veh || ''; } } catch (e) { /* noop */ }
+const saveProf = () => { try { localStorage.setItem('sampleTT_profile', JSON.stringify({ nick: $('nick').value, veh: $('veh').value })); } catch (e) { /* noop */ } };
+$('nick').oninput = saveProf; $('veh').oninput = saveProf;
 function renderSteps() {
   if (setupOpen === null) setupOpen = !anyReg() && !course.goal; const open = setupOpen || !!tapMode;
-  $('setupBtn').textContent = open ? '▲ 閉じる' : '⚙ コースをつくる・変える'; $('steps').classList.toggle('hide', !open);
+  $('setupBtn').textContent = open ? '▲ 閉じる' : '⚙ コースをつくる・変える'; $('steps').classList.toggle('hide', !open); $('profBox').classList.toggle('hide', !open);
   let h = '';
   ['ss', 'view', 'historic'].forEach(k => {
     const idxs = regs(k); if (tapMode === k && !idxs.includes(tapIdx)) idxs.push(tapIdx); idxs.sort();
@@ -235,7 +439,7 @@ function renderStrip() {
   let h = '';
   ['ss', 'view', 'historic'].forEach(k => regs(k).forEach(i => {
     const done = k === 'ss' ? !!day.ss[i] : day[k][i];
-    const n = done ? '✅ ' + (k === 'ss' ? day.ss[i].pts : PT) + '点' : '目標 ' + (k === 'ss' ? SS_MAX : PT) + '点';
+    const n = done ? '✅ ' + (k === 'ss' ? day.ss[i].pts : PT) + '点' : (k === 'ss' ? '設定 ' + fmtS(course.ss[i].sec) + '<br>目標 ' + SS_MAX + '点' : '目標 ' + PT + '点');
     h += '<button class="m' + (done ? ' done' : '') + (focus && focus.k === k && focus.i === i ? ' sel' : '') + '" data-k="' + k + '" data-i="' + i + '">' + LAB[k] + (i + 1) + '<span class="n">' + n + '</span></button>';
   }));
   if (course.goal) {
@@ -257,24 +461,28 @@ function renderRes() {
   $('resCard').classList.toggle('hide', !rows.length);
   $('res').innerHTML = rows.map(r => '<div class="res"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('') + (day.fin ? '<div class="res"><span><b>合計</b></span><b>' + total() + ' / ' + target() + ' 点</b></div>' : '');
 }
-let goIdx = null;
+let goIdx = null, nearA = null;
 function nextSS() { const l = regs('ss').filter(i => !day.ss[i]); if (!l.length) return null; return l.includes(selSS) ? selSS : l[0]; }
 function renderGo() {
   goIdx = run ? null : nextSS(); const show = goIdx !== null; $('goCard').classList.toggle('hide', !show); if (!show) return;
   const s = course.ss[goIdx]; $('goTitle').textContent = 'SS' + (goIdx + 1);
+  const ds = fix ? dist(fix.lat, fix.lon, s.a[0], s.a[1]) : Infinity;
+  if (nearA === goIdx) { if (ds > START_NEAR + 60) nearA = null; } else if (ds <= START_NEAR && fix && fix.acc <= 100) { nearA = goIdx; try { $('goCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }
+  $('goBtn').disabled = nearA !== goIdx; $('goBtn').textContent = nearA === goIdx ? '⏱ 計測スタート' : '⏱ スタート地点（A）に着くと押せます';
   $('goInfo').textContent = '道のり ' + fmtD(s.dist) + '／設定 ' + fmtS(s.sec) + '　スタート地点（A）で押してください' + (fix ? '（Aまで ' + fmtD(dist(fix.lat, fix.lon, s.a[0], s.a[1])) + '）' : '');
 }
 function renderFin() {
-  const on = !!course.goal; $('finCard').classList.toggle('hide', !on); if (!on) return;
+  const on = !!course.goal; $('finCard').classList.toggle('hide', !on); if (!on) return; $('certBtn').classList.toggle('hide', !day.fin);
   $('finBtn').disabled = !day.goal || day.fin;
   $('finHint').textContent = day.fin ? '🎉 ゴールしました！' : (day.goal ? 'ポイントはすべて取れました。「ゴール」ボタンを押してください。' : (allDone() ? 'すべて取りました。ゴール地点へ向かってください。' : 'のこり：' + remainTxt() + '　設定したポイントをすべて取るとゴールできます。'));
 }
+$('certBtn').onclick = showCertificate;
 $('finBtn').onclick = () => {
   if (!day.goal || day.fin) return; day.fin = true; day.yaeOpen = null; saveDay(); renderAll();
   const lines = []; regs('ss').forEach(i => lines.push('SS' + (i + 1) + '　' + (day.ss[i] ? day.ss[i].pts : 0) + '点'));
   const v = day.view.filter(Boolean).length, h = day.historic.filter(Boolean).length, y = day.yae.reduce((s, n) => s + Math.min(n, YAE_MAX), 0);
   if (nReg('view')) lines.push('ビュー ' + v + '箇所　' + v * PT + '点'); if (nReg('historic')) lines.push('レガシー ' + h + '箇所　' + h * PT + '点'); lines.push('ヤエー ' + y + '回　' + y * YAE_PT + '点');
-  pop('🎉 ゴール！おめでとうございます', total(), lines.join('\n'), true, true);
+  pop('🎉 ゴール！おめでとうございます', total(), lines.join('\n'), true, true, target());
 };
 function renderAll() { renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
 
@@ -315,6 +523,7 @@ function runUi() {
   if (!run) return; const s = course.ss[run.i];
   $('runSpeed').firstChild.nodeValue = String(run.moving ? Math.round(spd) : 0);
   $('runState').textContent = run.moving ? '⏱ 計測中' : '⏸ 停止中（計測を一時停止しています）'; $('runState').classList.toggle('paused', !run.moving);
+  $('runSet').textContent = '設定タイム ' + fmtS(s.sec);
   $('runInfo').textContent = 'ゴール地点（B）まで あと ' + (fix ? fmtD(dist(fix.lat, fix.lon, s.b[0], s.b[1])) : '—') + '　B地点に着くと自動で止まります。';
 }
 function runTick() { if (!run) return; const now = Date.now(), dt = now - run.last; run.last = now; if (run.moving && now - lastFixAt < 8000) run.acc += dt; runUi(); }
@@ -325,7 +534,7 @@ $('goBtn').onclick = () => {
   $('runTitle').textContent = 'SS' + (i + 1); $('runCard').classList.remove('hide'); runUi();
   clearInterval(tick); tick = setInterval(runTick, 250);
   renderGo(); renderYae(); $('runCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  if (map) { focus = null; map.fitBounds(L.latLngBounds([s.a, s.b]), { padding: [30, 30] }); }
+  nearA = null; if (map) { focus = null; map.fitBounds(L.latLngBounds([s.a, s.b]), { padding: [30, 30] }); }
 };
 function finishRun() {
   const i = run.i, s = course.ss[i], actual = run.acc / 1000, err = actual - s.sec, pts = ssPts(err);
