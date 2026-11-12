@@ -89,7 +89,7 @@ button{font:inherit}
 
   <div id="setup" class="card">
     <button id="setupBtn" class="btn" style="width:100%"></button>
-    <div id="profBox" class="hide" style="margin-top:10px"><label class="muted" for="nick">ニックネーム</label><input id="nick" maxlength="20" placeholder="例：くに" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin:2px 0 8px"><label class="muted" for="veh">車両名</label><input id="veh" maxlength="30" placeholder="例：CB400SF" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin:2px 0 4px"></div>
+    <div id="profBox" class="hide" style="margin-top:10px"><label class="muted" for="nick">ニックネーム</label><input id="nick" maxlength="20" placeholder="例：くに" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin:2px 0 8px"><label class="muted" for="veh">車両名</label><input id="veh" maxlength="30" placeholder="例：CB400SF" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin:2px 0 4px"><div class="muted" style="margin-top:8px">設定タイム（走りのペース）</div><div id="paceBox" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px"></div></div>
     <div id="steps" class="hide" style="margin-top:8px"></div>
   </div>
 
@@ -130,6 +130,11 @@ function fmtS(sec) { sec = Math.round(sec); return Math.floor(sec / 60) + ':' + 
 const r1 = v => Math.round(v * 10) / 10;
 /* SSの採点：満点75点から、設定タイムとの差 1分につき1点を引きます */
 const ssPts = errSec => Math.max(0, r1(SS_MAX - Math.abs(errSec) / 60));
+/* 設定タイム：地図のルート案内の所要時間に、早め(1.0倍)・普通(1.1倍)・ゆっくり(1.25倍)のゆとりを持たせます */
+const PACE = { fast: ['早め', 1.0], normal: ['普通', 1.1], slow: ['ゆっくり', 1.25] };
+let pace = 'normal';
+try { const p0 = localStorage.getItem('sampleTT_pace'); if (p0 && PACE[p0]) pace = p0; } catch (e) { /* noop */ }
+const setSec = s => Math.round(s.sec * PACE[pace][1]);
 const regs = k => course[k].map((v, i) => v ? i : -1).filter(i => i >= 0);
 const nReg = k => regs(k).length;
 const anyReg = () => nReg('ss') + nReg('view') + nReg('historic') > 0;
@@ -402,7 +407,7 @@ async function onTap(lat, lon) {
       const r = await fetch('https://router.project-osrm.org/route/v1/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson'); const j = await r.json();
       if (j.routes && j.routes[0]) { d = j.routes[0].distance; sec = j.routes[0].duration; line = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); }
     } catch (e) { /* 通信できないときは、直線×1.3と時速40kmで計算 */ }
-    course.ss[idx] = { a, b, dist: d, sec: Math.max(30, Math.round(sec)), line }; saveCourse(); bar(''); toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(d) + '／設定タイム ' + fmtS(course.ss[idx].sec));
+    course.ss[idx] = { a, b, dist: d, sec: Math.max(30, Math.round(sec)), line }; saveCourse(); bar(''); toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(d) + '／設定タイム ' + fmtS(setSec(course.ss[idx])));
   } else if (k === 'goal') { course.goal = [lat, lon]; tapMode = null; saveCourse(); bar(''); toast('✅ ゴールを登録しました'); }
   else if (k) { course[k][idx] = [lat, lon]; tapMode = null; saveCourse(); bar(''); toast('✅ ' + LAB[k] + (idx + 1) + 'を登録しました'); }
   fitted = false; renderAll();
@@ -410,6 +415,8 @@ async function onTap(lat, lon) {
 const btnS = 'style="min-height:40px;font-size:14px;padding:0 10px"';
 let setupOpen = null;
 try { const p = JSON.parse(localStorage.getItem('sampleTT_profile') || 'null'); if (p) { $('nick').value = p.nick || ''; $('veh').value = p.veh || ''; } } catch (e) { /* noop */ }
+function renderPace() { $('paceBox').innerHTML = Object.keys(PACE).map(k => '<button type="button" class="btn' + (k === pace ? ' g' : '') + '" data-p="' + k + '" style="min-height:44px;font-size:15px;padding:0 4px">' + PACE[k][0] + '</button>').join('');
+  $('paceBox').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { if (run) { toast('計測中は変えられません。'); return; } pace = b.dataset.p; try { localStorage.setItem('sampleTT_pace', pace); } catch (e) { /* noop */ } renderAll(); }); }
 const saveProf = () => { try { localStorage.setItem('sampleTT_profile', JSON.stringify({ nick: $('nick').value, veh: $('veh').value })); } catch (e) { /* noop */ } };
 $('nick').oninput = saveProf; $('veh').oninput = saveProf;
 function renderSteps() {
@@ -420,7 +427,7 @@ function renderSteps() {
     const idxs = regs(k); if (tapMode === k && !idxs.includes(tapIdx)) idxs.push(tapIdx); idxs.sort();
     h += '<div class="step" style="background:#f3f6fb;border-radius:10px;padding:6px 10px"><div class="nm">' + LAB[k] + '（' + nReg(k) + '/' + SLOTS + '）</div><button class="btn g" ' + btnS + ' data-a="' + k + '"' + (nReg(k) >= SLOTS && tapMode !== k ? ' disabled' : '') + '>＋追加</button></div>';
     idxs.forEach(i => {
-      const it = course[k][i]; let st = it ? '✅ 登録済み' : '👆 地図をタップ中'; if (k === 'ss' && it) st = '✅ ' + fmtD(it.dist) + '・設定 ' + fmtS(it.sec);
+      const it = course[k][i]; let st = it ? '✅ 登録済み' : '👆 地図をタップ中'; if (k === 'ss' && it) st = '✅ ' + fmtD(it.dist) + '・設定 ' + fmtS(setSec(it));
       h += '<div class="step"><div class="nm">' + LAB[k] + (i + 1) + '<div class="st' + (it ? ' ok' : '') + '">' + st + '</div></div>' + (it ? '<button class="btn" ' + btnS + ' data-r="' + k + ':' + i + '">やり直す</button><button class="btn r" ' + btnS + ' data-d="' + k + ':' + i + '">消す</button>' : '') + '</div>';
     });
   });
@@ -439,7 +446,7 @@ function renderStrip() {
   let h = '';
   ['ss', 'view', 'historic'].forEach(k => regs(k).forEach(i => {
     const done = k === 'ss' ? !!day.ss[i] : day[k][i];
-    const n = done ? '✅ ' + (k === 'ss' ? day.ss[i].pts : PT) + '点' : (k === 'ss' ? '設定 ' + fmtS(course.ss[i].sec) + '<br>目標 ' + SS_MAX + '点' : '目標 ' + PT + '点');
+    const n = done ? '✅ ' + (k === 'ss' ? day.ss[i].pts : PT) + '点' : (k === 'ss' ? '設定 ' + fmtS(setSec(course.ss[i])) + '<br>目標 ' + SS_MAX + '点' : '目標 ' + PT + '点');
     h += '<button class="m' + (done ? ' done' : '') + (focus && focus.k === k && focus.i === i ? ' sel' : '') + '" data-k="' + k + '" data-i="' + i + '">' + LAB[k] + (i + 1) + '<span class="n">' + n + '</span></button>';
   }));
   if (course.goal) {
@@ -469,7 +476,7 @@ function renderGo() {
   const ds = fix ? dist(fix.lat, fix.lon, s.a[0], s.a[1]) : Infinity;
   if (nearA === goIdx) { if (ds > START_NEAR + 60) nearA = null; } else if (ds <= START_NEAR && fix && fix.acc <= 100) { nearA = goIdx; try { $('goCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }
   $('goBtn').disabled = nearA !== goIdx; $('goBtn').textContent = nearA === goIdx ? '⏱ 計測スタート' : '⏱ スタート地点（A）に着くと押せます';
-  $('goInfo').textContent = '道のり ' + fmtD(s.dist) + '／設定 ' + fmtS(s.sec) + '　スタート地点（A）で押してください' + (fix ? '（Aまで ' + fmtD(dist(fix.lat, fix.lon, s.a[0], s.a[1])) + '）' : '');
+  $('goInfo').textContent = '道のり ' + fmtD(s.dist) + '／設定 ' + fmtS(setSec(s)) + '　スタート地点（A）で押してください' + (fix ? '（Aまで ' + fmtD(dist(fix.lat, fix.lon, s.a[0], s.a[1])) + '）' : '');
 }
 function renderFin() {
   const on = !!course.goal; $('finCard').classList.toggle('hide', !on); if (!on) return; $('certBtn').classList.toggle('hide', !day.fin);
@@ -484,7 +491,7 @@ $('finBtn').onclick = () => {
   if (nReg('view')) lines.push('ビュー ' + v + '箇所　' + v * PT + '点'); if (nReg('historic')) lines.push('レガシー ' + h + '箇所　' + h * PT + '点'); lines.push('ヤエー ' + y + '回　' + y * YAE_PT + '点');
   pop('🎉 ゴール！おめでとうございます', total(), lines.join('\n'), true, true, target());
 };
-function renderAll() { renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
+function renderAll() { renderPace(); renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
 
 /* ---------- GPS・到着 ---------- */
 let wid = null, run = null, tick = null, goalWarn = 0, lastFixAt = 0, prevFix = null, spd = 0;
@@ -523,7 +530,7 @@ function runUi() {
   if (!run) return; const s = course.ss[run.i];
   $('runSpeed').firstChild.nodeValue = String(run.moving ? Math.round(spd) : 0);
   $('runState').textContent = run.moving ? '⏱ 計測中' : '⏸ 停止中（計測を一時停止しています）'; $('runState').classList.toggle('paused', !run.moving);
-  $('runSet').textContent = '設定タイム ' + fmtS(s.sec);
+  $('runSet').textContent = '設定タイム ' + fmtS(setSec(s));
   $('runInfo').textContent = 'ゴール地点（B）まで あと ' + (fix ? fmtD(dist(fix.lat, fix.lon, s.b[0], s.b[1])) : '—') + '　B地点に着くと自動で止まります。';
 }
 function runTick() { if (!run) return; const now = Date.now(), dt = now - run.last; run.last = now; if (run.moving && now - lastFixAt < 8000) run.acc += dt; runUi(); }
@@ -537,9 +544,9 @@ $('goBtn').onclick = () => {
   nearA = null; if (map) { focus = null; map.fitBounds(L.latLngBounds([s.a, s.b]), { padding: [30, 30] }); }
 };
 function finishRun() {
-  const i = run.i, s = course.ss[i], actual = run.acc / 1000, err = actual - s.sec, pts = ssPts(err);
-  clearInterval(tick); run = null; $('runCard').classList.add('hide'); day.ss[i] = { actual, err, pts, set: s.sec }; day.yaeOpen = i; saveDay();
-  renderAll(); setTimeout(() => { try { $('yaeCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 150); pop('SS' + (i + 1) + ' ゴール', pts, '実走 ' + fmtS(actual) + '　設定 ' + fmtS(s.sec) + '　誤差 ' + (err >= 0 ? '+' : '−') + Math.abs(Math.round(err)) + '秒');
+  const i = run.i, s = course.ss[i], actual = run.acc / 1000, err = actual - setSec(s), pts = ssPts(err);
+  clearInterval(tick); run = null; $('runCard').classList.add('hide'); day.ss[i] = { actual, err, pts, set: setSec(s) }; day.yaeOpen = i; saveDay();
+  renderAll(); setTimeout(() => { try { $('yaeCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 150); pop('SS' + (i + 1) + ' ゴール', pts, '実走 ' + fmtS(actual) + '　設定 ' + fmtS(setSec(s)) + '　誤差 ' + (err >= 0 ? '+' : '−') + Math.abs(Math.round(err)) + '秒');
 }
 $('runCancel').onclick = () => { clearInterval(tick); run = null; $('runCard').classList.add('hide'); renderAll(); };
 $('reset').onclick = () => { if (!confirm('今日の記録を消します（コースの登録は残ります）。よろしいですか？')) return; day = newDay(); saveDay(); run = null; clearInterval(tick); $('runCard').classList.add('hide'); renderAll(); };
