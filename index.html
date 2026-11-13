@@ -146,6 +146,7 @@ let pace = 'normal';
 try { const p0 = localStorage.getItem('sampleTT_pace'); if (p0 && PACE[p0]) pace = p0; } catch (e) { /* noop */ }
 const setSec = s => Math.round(s.sec * PACE[pace][1]);
 const SB_URL = 'https://ovlhlmxybldojwkndcxn.supabase.co', SB_KEY = 'sb_publishable_KgScZeXHt0aNftuGJSQTkw_V-xpJijP';
+const MB_TOKEN = 'pk.eyJ1IjoiZWFydGh0cnkiLCJhIjoiY213ZThxbjFuMDA1ODMwczZycGx3aG1vNyJ9.LPjkh9Fy1B6vgJIpbpe00g';
 let premium = false;
 const limit = () => premium ? SLOTS : FREE_SLOTS;
 const regs = k => course[k].map((v, i) => v && i < limit() ? i : -1).filter(i => i >= 0);
@@ -378,7 +379,7 @@ const pin = (c, t) => L.divIcon({ className: '', html: pinHtml(c, t), iconSize: 
 function initMap() {
   if (map || typeof L === 'undefined') return;
   map = L.map('map').setView([37.4, 140.4], 8);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map); layer = L.layerGroup().addTo(map);
+  L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=' + MB_TOKEN, { tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map); layer = L.layerGroup().addTo(map);
   map.on('click', e => { if (tapMode) onTap(e.latlng.lat, e.latlng.lng); });
 }
 function drawMap() {
@@ -417,7 +418,7 @@ async function onTap(lat, lon) {
     const a = tmpA, b = [lat, lon]; tapMode = null; tmpA = null; bar('道のりを計算しています…');
     let d = dist(a[0], a[1], b[0], b[1]) * 1.3, sec = d / (FALLBACK_KMH / 3.6), line = null;
     try {
-      const r = await fetch('https://router.project-osrm.org/route/v1/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson'); const j = await r.json();
+      const r = await fetch('https://api.mapbox.com/directions/v5/mapbox/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson&access_token=' + MB_TOKEN); const j = await r.json();
       if (j.routes && j.routes[0]) { d = j.routes[0].distance; sec = j.routes[0].duration; line = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); }
     } catch (e) { /* 通信できないときは、直線×1.3と時速40kmで計算 */ }
     course.ss[idx] = { a, b, dist: d, sec: Math.max(30, Math.round(sec)), line }; saveCourse(); bar(''); toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(d) + '／設定タイム ' + fmtS(setSec(course.ss[idx])));
