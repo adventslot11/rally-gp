@@ -103,6 +103,8 @@ button{font:inherit}
     <div id="acctBody"></div>
   </div>
 
+  <div class="card" style="font-size:13px;text-align:center;line-height:2"><a href="terms.html">利用規約</a>　|　<a href="privacy.html">プライバシーポリシー</a>　|　<a href="tokusho.html">特定商取引法に基づく表記</a><div style="color:var(--m)">運営：一般社団法人地球体験機構</div></div>
+
   <div class="card"><button id="reset" class="btn r" style="width:100%">今日の記録をリセットする</button></div>
 
 </main>
@@ -607,7 +609,7 @@ function renderAcct() {
   else if (!user) {
     h += '<div class="muted">無料お試しでは、SS・ビュー・レガシーを各1か所まで登録できます。プレミアムにするには、先にメールでログインします。</div>';
     if (acctStep === 'mail') h += '<input id="aMail" type="email" inputmode="email" autocomplete="email" placeholder="メールアドレス" value="' + esc(acctMail) + '"><div class="row"><button id="aSend" class="btn g" style="flex:1">ログイン用のメールを送る</button></div>';
-    else h += '<div style="margin-top:8px;font-weight:700">' + esc(acctMail) + ' にログイン用のメールを送りました。メールの「Sign in」のリンクを押すと、ログインできます。</div><div class="muted">届かないときは、迷惑メールのフォルダも見てください。</div><div class="row"><button id="aBack" class="btn" style="flex:1">メールアドレスを入れ直す</button></div>';
+    else h += '<div style="margin-top:8px;font-weight:700">' + esc(acctMail) + ' にログイン用のメールを送りました。メールの「ログインする」ボタンを押すと、ログインできます。</div><div class="muted">届かないときは、迷惑メールのフォルダも見てください。</div><div class="row"><button id="aBack" class="btn" style="flex:1">メールアドレスを入れ直す</button></div>';
   } else {
     h += '<div class="muted">ログイン中：' + esc(user.email || '') + '</div>';
     if (pro) {
