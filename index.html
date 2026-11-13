@@ -678,6 +678,18 @@ $('yBtn').onclick = () => {
 let sb = null, user = null, plan = { active: false };
 try { sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }); } catch (e) { sb = null; }
 let acctMsg = '', acctStep = 'mail', acctMail = '';
+const INV_KEY = 'gp_invite';
+(function () { try { const c = new URLSearchParams(location.search).get('invite'); if (c) { localStorage.setItem(INV_KEY, c.trim()); history.replaceState(null, '', location.pathname); } } catch (e) { /* noop */ } })();
+const pendingInvite = () => { try { return localStorage.getItem(INV_KEY) || ''; } catch (e) { return ''; } };
+const clearInvite = () => { try { localStorage.removeItem(INV_KEY); } catch (e) { /* noop */ } };
+async function redeem(code, manual) {
+  try {
+    const { data, error } = await sb.rpc('gp_redeem_invite', { p_code: code });
+    if (error || !data) { acctMsg = '招待コードを確認できませんでした。通信を確認してもう一度お試しください。'; return false; }
+    if (data.ok) { clearInvite(); acctMsg = ''; toast(data.already ? '⭐ すでにプレミアムです' : '🎁 招待でプレミアムが始まりました'); return true; }
+    clearInvite(); acctMsg = ({ invalid: '招待コードが正しくありません。', expired: 'この招待コードは期限が切れています。', full: 'この招待コードは、使える人数に達しました。' })[data.reason] || '招待コードを使えませんでした。'; return false;
+  } catch (e) { acctMsg = '招待コードを確認できませんでした。'; return false; }
+}
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function fnCall(path) {
   const { data: { session } } = await sb.auth.getSession(); if (!session) throw new Error('ログインしてください');
@@ -686,6 +698,7 @@ async function fnCall(path) {
 }
 async function loadPlan() {
   plan = { active: false };
+  if (sb && user && pendingInvite()) await redeem(pendingInvite());
   if (sb && user) { try { const { data, error } = await sb.rpc('gp_my_plan'); if (!error && data) plan = data; } catch (e) { /* noop */ } }
   const was = premium; premium = !!plan.active; if (was !== premium) { fitted = false; }
   renderAcct(); renderAll();
@@ -697,14 +710,17 @@ function renderAcct() {
   if (!sb) h = '<div class="muted">アカウント機能を読み込めませんでした。通信を確認して、ページを開き直してください。</div>';
   else if (!user) {
     h += '<div class="muted">無料お試しでは、SS・フォトポイント・チェックポイントを各1か所まで登録できます。プレミアムにするには、先にメールでログインします。</div>';
+    if (pendingInvite()) h += '<div style="margin-top:6px;font-weight:700;color:#8a5a00">🎁 招待コードを受け取りました。ログインすると、プレミアムが始まります。</div>';
     if (acctStep === 'mail') h += '<input id="aMail" type="email" inputmode="email" autocomplete="email" placeholder="メールアドレス" value="' + esc(acctMail) + '"><div class="row"><button id="aSend" class="btn g" style="flex:1">ログイン用のメールを送る</button></div>';
     else h += '<div style="margin-top:8px;font-weight:700">' + esc(acctMail) + ' にログイン用のメールを送りました。メールの「ログインする」ボタンを押すと、ログインできます。</div><div class="muted">届かないときは、迷惑メールのフォルダも見てください。</div><div class="row"><button id="aBack" class="btn" style="flex:1">メールアドレスを入れ直す</button></div>';
   } else {
     h += '<div class="muted">ログイン中：' + esc(user.email || '') + '</div>';
     if (pro) {
       const d = plan.current_period_end ? new Date(plan.current_period_end).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }) : '';
+      if (plan.invite) h += '<div style="margin-top:6px;font-weight:700">🎁 招待でプレミアム利用中' + (d ? '（' + d + ' まで）' : '') + '</div>'; else
       h += '<div style="margin-top:6px;font-weight:700">⭐ プレミアム利用中' + (plan.cancel_at_period_end && d ? '（' + d + ' で終了予定）' : (d ? '（次回更新 ' + d + '）' : '')) + '</div><div class="row"><button id="aPortal" class="btn" style="flex:1">契約の管理（解約・カード変更）</button></div>';
-    } else h += '<div class="row"><button id="aBuy" class="btn g" style="flex:1">⭐ プレミアムにする（月額500円）</button></div>';
+    } else { h += '<div class="row"><button id="aBuy" class="btn g" style="flex:1">⭐ プレミアムにする（月額500円）</button></div>';
+      h += '<div class="muted" style="margin-top:10px">招待コードをお持ちの方</div><div class="row"><input id="aInv" placeholder="招待コード" autocapitalize="characters" style="flex:1"><button id="aInvGo" class="btn" style="min-height:44px;font-size:15px">使う</button></div>'; }
     h += '<div class="row"><button id="aOut" class="btn" style="flex:1;min-height:44px;font-size:15px">ログアウト</button></div>';
   }
   if (acctMsg) h += '<div style="margin-top:8px;font-weight:700;color:#b03a2e">' + esc(acctMsg) + '</div>';
@@ -723,6 +739,7 @@ function renderAcct() {
   });
   on('aBack', () => { acctStep = 'mail'; acctMsg = ''; renderAcct(); });
   on('aOut', async () => { await sb.auth.signOut(); });
+  on('aInvGo', async () => { const c = ($('aInv').value || '').trim(); if (!c) return; $('aInvGo').disabled = true; await redeem(c, true); await loadPlan(); });
   on('aBuy', buy); on('aPortal', async () => { try { $('aPortal').disabled = true; location.href = await fnCall('portal'); } catch (e) { acctMsg = e.message; renderAcct(); } });
 }
 async function buy() {
