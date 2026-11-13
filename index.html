@@ -453,7 +453,13 @@ const pin = (c, t) => L.divIcon({ className: '', html: pinHtml(c, t), iconSize: 
 function initMap() {
   if (map || typeof L === 'undefined') return;
   map = L.map('map').setView([37.4, 140.4], 8);
-  L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=' + MB_TOKEN, { tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map); layer = L.layerGroup().addTo(map);
+  const gsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxNativeZoom: 18, maxZoom: 19, attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>' });
+  const mbx = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=' + MB_TOKEN, { tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' });
+  let pick = 'gsi'; try { pick = localStorage.getItem('gp_basemap') || 'gsi'; } catch (e) { /* noop */ }
+  (pick === 'mbx' ? mbx : gsi).addTo(map);
+  try { L.control.layers({ '日本語・詳細（地理院地図）': gsi, '世界地図（Mapbox）': mbx }, null, { position: 'topright', collapsed: true }).addTo(map);
+    map.on('baselayerchange', e => { try { localStorage.setItem('gp_basemap', e.layer === mbx ? 'mbx' : 'gsi'); } catch (x) { /* noop */ } }); } catch (e) { /* noop */ }
+  layer = L.layerGroup().addTo(map);
   map.on('click', e => { if (tapMode) onTap(e.latlng.lat, e.latlng.lng); });
 }
 function drawMap() {
