@@ -140,8 +140,8 @@ const fmtErr = e => (e >= 0 ? '+' : '−') + fmtS(Math.abs(e));
 const r1 = v => Math.round(v * 10) / 10;
 /* SSの採点：満点75点から、設定タイムとの差 1分につき1点を引きます */
 const ssPts = errSec => Math.max(0, r1(SS_MAX - Math.abs(errSec) / 60));
-/* 設定タイム：地図のルート案内の所要時間に、早め(1.0倍)・普通(1.25倍)・ゆっくり(1.5倍)のゆとりを持たせます */
-const PACE = { fast: ['早め', 1.0], normal: ['普通', 1.25], slow: ['ゆっくり', 1.5] };
+/* 設定タイム：地図のルート案内の所要時間に、早め(1.1倍)・普通(1.375倍)・ゆっくり(1.65倍)のゆとりを持たせます（v13：従来より各10%長め） */
+const PACE = { fast: ['早め', 1.1], normal: ['普通', 1.375], slow: ['ゆっくり', 1.65] };
 let pace = 'normal';
 try { const p0 = localStorage.getItem('sampleTT_pace'); if (p0 && PACE[p0]) pace = p0; } catch (e) { /* noop */ }
 const setSec = s => Math.round(s.sec * PACE[pace][1]);
