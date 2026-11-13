@@ -75,6 +75,14 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
 .reward-overlay{backdrop-filter:blur(4px)}
 @keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
 .card.hero,#photoCard:not(.hide),#goCard:not(.hide){animation:pop .35s ease-out}
+
+.tabs{display:flex;gap:8px;margin:6px 0 10px}.tabs .btn{flex:1;min-height:44px;font-size:15px}.tabs .btn.on{background:#223a6b;color:#fff}
+.rk{display:flex;align-items:center;gap:10px;padding:8px 6px;border-top:2px dashed var(--line)}.rk.me{background:#fff3c4;border-radius:10px}
+.rk .pos{min-width:36px;text-align:center;font-weight:900;font-size:18px;color:#223a6b}.rk .pos.p1{color:#d49a00}.rk .nm{flex:1;font-weight:800;word-break:break-all}.rk .pt{font-weight:900;white-space:nowrap}
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gal figure{margin:0;border:2px solid #223a6b;border-radius:12px;overflow:hidden;background:#fff}
+.gal img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#dde4f0}.gal figcaption{padding:4px 6px;font-size:12px;color:var(--m)}
+.gal .bt{display:flex;gap:4px;padding:0 6px 6px}.gal .bt button{flex:1;min-height:34px;font-size:12px;border:2px solid #223a6b;border-radius:8px;background:#fff;font-weight:800;color:#223a6b}
+.ov .box .btn{width:100%;margin-top:8px}.ov img.prev{max-width:100%;max-height:36vh;border-radius:12px;border:2px solid #223a6b}
 </style></head><body>
 <header><img src="icon-64.png" alt="" width="34" height="34" style="border-radius:8px;background:#fff"><b>Rally GP</b><span class="tag">ソロ</span><span id="hPlan" class="tag" style="margin-left:auto"></span></header>
 <div id="toast"></div>
@@ -139,6 +147,27 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
   </div>
 
   <div id="resCard" class="card hide"><h2>🏆 今日の結果</h2><div id="res"></div></div>
+
+  <div id="rankCard" class="card">
+    <h2>🏆 月間ランキング</h2>
+    <div class="muted">1か月の合計点で順位が決まります。月が変わると、新しいランキングになります。</div>
+    <div class="tabs"><button id="rkThis" class="btn on" type="button">今月</button><button id="rkLast" class="btn" type="button">先月</button></div>
+    <div id="rkMy" class="muted" style="margin-bottom:6px"></div>
+    <div id="rkList"></div>
+    <div id="rkNickBox" class="hide" style="margin-top:10px;border-top:2px dashed var(--line);padding-top:10px">
+      <label class="muted" for="rkNick">ランキングに出るニックネーム（20文字まで）</label>
+      <div style="display:flex;gap:8px;margin-top:4px"><input id="rkNick" maxlength="20" placeholder="例：くに" style="flex:1;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px"><button id="rkNickSave" class="btn g" type="button" style="min-height:46px">保存</button></div>
+      <div id="rkNickMsg" class="muted"></div>
+    </div>
+    <div id="rkLogin" class="muted hide" style="margin-top:8px">ログインすると、ランキングに参加できます（下の「アカウント」から）。</div>
+  </div>
+
+  <details id="galCard" class="card">
+    <summary style="cursor:pointer;font-weight:900;font-size:19px;color:#223a6b">📸 フォトギャラリー</summary>
+    <div class="tabs"><button id="gaPub" class="btn on" type="button">みんなの写真</button><button id="gaMine" class="btn" type="button">自分の写真</button></div>
+    <div id="galMsg" class="muted"></div>
+    <div id="galList" class="gal"></div>
+  </details>
 
   <div id="acct" class="card acct">
     <h2>👤 アカウント <span id="planTag" class="plan">無料お試し</span></h2>
@@ -552,7 +581,7 @@ $('phBtn').onclick = () => { if (nearPh === null) return; phTarget = nearPh; $('
 $('phFile').onchange = e => {
   const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f || phTarget === null || day.fin) return;
   const i = phTarget; phTarget = null; if (day.view[i]) return;
-  day.view[i] = true; day.yaeOpen = null; saveDay(); pop('フォトポイント' + (i + 1) + ' 撮影', PT, '写真をゲット！'); renderAll();
+  handlePhoto(f, i);
 };
 function renderFin() {
   const on = !!course.goal; $('finCard').classList.toggle('hide', !on); if (!on) return; $('certBtn').classList.toggle('hide', !(day.fin && day.complete));
@@ -567,7 +596,7 @@ $('finBtn').onclick = () => {
   if (nReg('view')) lines.push('フォトポイント ' + v + '箇所　' + v * PT + '点'); if (nReg('historic')) lines.push('チェックポイント ' + h + '箇所　' + h * PT + '点'); lines.push('ヤエー ' + y + '回　' + y * YAE_PT + '点');
   pop(day.complete ? '🎉 完走！おめでとうございます' : '🏁 ゴールしました', total(), lines.join('\n') + (day.complete ? '' : '\n\n※ のこりのポイントがあるため、完走証明は発行されません\n（のこり：' + remainTxt() + '）'), true, true, target(), day.complete);
 };
-function renderAll() { renderPace(); renderPhoto(); renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
+function renderAll() { if (typeof scheduleScore === 'function') scheduleScore(); renderPace(); renderPhoto(); renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
 
 /* ---------- GPS・到着 ---------- */
 let wid = null, run = null, tick = null, goalWarn = 0, lastFixAt = 0, prevFix = null, spd = 0;
@@ -720,8 +749,106 @@ if (sb) {
   } else if (q.get('canceled') === '1') { try { history.replaceState(null, '', location.pathname); } catch (e) { /* noop */ } acctMsg = 'お支払いは完了していません。'; }
 })();
 
+
+/* ---------- 第2段階：写真の保存・月間ランキング ---------- */
+const PH_BUCKET = 'gp-photos';
+const ymOf = d => d.slice(0, 7);
+const prevYm = ym => { let [y, m] = ym.split('-').map(Number); m--; if (!m) { m = 12; y--; } return y + '-' + String(m).padStart(2, '0'); };
+let rkMonth = 'this', galTab = 'pub', nickOk = false, lastSent = null, scoreT = null;
+const nickVal = () => ($('nick').value || '').trim();
+async function syncNick(msgEl) {
+  const n = nickVal(); if (!sb || !user || !n) return false;
+  try { const { error } = await sb.rpc('gp_set_nickname', { p_nick: n }); if (error) throw error; nickOk = true; if (msgEl) msgEl.textContent = '✅ 保存しました'; return true; }
+  catch (e) { if (msgEl) msgEl.textContent = '保存できませんでした。もう一度お試しください。'; return false; }
+}
+function scheduleScore() {
+  if (!sb || !user) return; clearTimeout(scoreT);
+  scoreT = setTimeout(async () => {
+    const t = total(), key = day.d + ':' + t; if (key === lastSent) return;
+    if (t === 0 && lastSent === null) return;
+    try { const { error } = await sb.rpc('gp_submit_day', { p_day: day.d, p_total: t, p_detail: { fin: !!day.fin, complete: !!day.complete } }); if (!error) { lastSent = key; loadRank(); } } catch (e) { /* noop */ }
+  }, 1500);
+}
+async function loadRank() {
+  const box = $('rkList'); if (!sb) { box.innerHTML = '<div class="muted">読み込めませんでした。</div>'; return; }
+  const ym = rkMonth === 'this' ? ymOf(today()) : prevYm(ymOf(today()));
+  let rows = []; try { const { data, error } = await sb.rpc('gp_monthly_ranking', { p_month: ym }); if (!error && data) rows = data; } catch (e) { /* noop */ }
+  $('rkThis').classList.toggle('on', rkMonth === 'this'); $('rkLast').classList.toggle('on', rkMonth !== 'this');
+  const me = rows.find(r => r.is_me);
+  $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（' + r1(Number(me.points)) + ' 点）' : (user ? 'まだ得点がありません' : ''));
+  box.innerHTML = rows.length ? rows.slice(0, 30).map(r => '<div class="rk' + (r.is_me ? ' me' : '') + '"><div class="pos' + (r.pos == 1 ? ' p1' : '') + '">' + (r.pos == 1 ? '👑' : r.pos) + '</div><div class="nm">' + esc(r.nickname) + '</div><div class="pt">' + r1(Number(r.points)) + ' 点</div></div>').join('') : '<div class="muted" style="padding:8px 0">まだ、ランキングに参加した人がいません。</div>';
+  $('rkNickBox').classList.toggle('hide', !user); $('rkLogin').classList.toggle('hide', !!user);
+  if (user && !$('rkNick').value) $('rkNick').value = nickVal();
+}
+$('rkThis').onclick = () => { rkMonth = 'this'; loadRank(); };
+$('rkLast').onclick = () => { rkMonth = 'last'; loadRank(); };
+$('rkNickSave').onclick = async () => { $('nick').value = $('rkNick').value; saveProf(); if (await syncNick($('rkNickMsg'))) { lastSent = null; scheduleScore(); loadRank(); } };
+$('nick').addEventListener('input', () => { $('rkNick').value = $('nick').value; clearTimeout($('nick')._t); $('nick')._t = setTimeout(() => { if (user) syncNick(null); }, 1200); });
+
+/* 写真：縮小 → 公開／非公開を選ぶ → 保存 → 5点 */
+async function shrink(file) {
+  try {
+    const bmp = await createImageBitmap(file); const m = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * m); c.height = Math.round(bmp.height * m); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82)); if (b) return b;
+  } catch (e) { /* noop */ }
+  return file;
+}
+function askVisibility(blob) {
+  return new Promise(res => {
+    const el = document.createElement('div'); el.className = 'ov'; const url = URL.createObjectURL(blob);
+    el.innerHTML = '<div class="box"><h3>📸 この写真をどうしますか？</h3><img class="prev" src="' + url + '" alt=""><button class="btn" data-v="0" type="button">🔒 自分だけで見る</button><button class="btn g" data-v="1" type="button">🌐 公開する</button><button class="btn r" data-v="x" type="button">やめる（点数なし）</button><div class="muted" style="margin-top:10px;text-align:left;line-height:1.6">公開すると、他の参加者に見えます。運営が、公式SNSで紹介することがあります。人の顔やナンバープレートなどが写っていないか、確認してください。あとから「自分の写真」で、非公開に戻すことも、消すこともできます。</div></div>';
+    el.querySelectorAll('button').forEach(b => b.onclick = () => { URL.revokeObjectURL(url); el.remove(); res(b.dataset.v); });
+    document.body.appendChild(el);
+  });
+}
+function givePhotoPoints(i) { day.view[i] = true; day.yaeOpen = null; saveDay(); pop('フォトポイント' + (i + 1) + ' 撮影', PT, '写真をゲット！'); renderAll(); }
+async function handlePhoto(file, i) {
+  if (!sb || !user) { givePhotoPoints(i); toast('📸 ログインすると、写真を保存して、ランキングにも参加できます'); return; }
+  const blob = await shrink(file); if (blob.size > 5 * 1024 * 1024) { toast('写真が大きすぎます。もう一度撮ってください。'); return; }
+  const v = await askVisibility(blob); if (v === 'x') return;
+  toast('📤 写真を保存しています…');
+  const path = user.id + '/' + day.d + '_' + (i + 1) + '_' + Date.now() + '.jpg';
+  try {
+    const up = await sb.storage.from(PH_BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false }); if (up.error) throw up.error;
+    const ad = await sb.rpc('gp_photo_add', { p_path: path, p_day: day.d, p_spot: i + 1, p_public: v === '1' });
+    if (ad.error) { try { await sb.storage.from(PH_BUCKET).remove([path]); } catch (e) { /* noop */ } throw ad.error; }
+  } catch (e) { toast('写真を保存できませんでした。電波のよい所で、もう一度お試しください。'); return; }
+  $('toast').style.display = 'none'; givePhotoPoints(i); if ($('galCard').open) loadGallery();
+}
+
+/* ギャラリー */
+async function signed(paths) {
+  const m = {}; if (!paths.length) return m;
+  try { const { data } = await sb.storage.from(PH_BUCKET).createSignedUrls(paths, 3600); (data || []).forEach(x => { if (x.signedUrl) m[x.path] = x.signedUrl; }); } catch (e) { /* noop */ }
+  return m;
+}
+async function loadGallery() {
+  const list = $('galList'), msg = $('galMsg'); $('gaPub').classList.toggle('on', galTab === 'pub'); $('gaMine').classList.toggle('on', galTab !== 'pub');
+  if (!sb) { msg.textContent = '読み込めませんでした。'; return; }
+  msg.textContent = '読み込み中…'; list.innerHTML = '';
+  let rows = [];
+  try {
+    if (galTab === 'pub') { const { data } = await sb.rpc('gp_public_photos', { p_limit: 30 }); rows = data || []; }
+    else {
+      if (!user) { msg.textContent = 'ログインすると、自分の写真が見られます。'; return; }
+      const { data } = await sb.from('gp_photos').select('id,path,is_public,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(60); rows = data || [];
+    }
+  } catch (e) { /* noop */ }
+  if (!rows.length) { msg.textContent = galTab === 'pub' ? 'まだ、公開された写真がありません。' : 'まだ、写真がありません。'; return; }
+  msg.textContent = '';
+  const urls = await signed(rows.map(r => r.path)); const mine = galTab !== 'pub';
+  list.innerHTML = rows.map(r => '<figure><img loading="lazy" alt="" src="' + esc(urls[r.path] || '') + '"><figcaption>' + (mine ? (r.is_public ? '🌐 公開中' : '🔒 自分だけ') : esc(r.nickname || 'ライダー')) + '　' + esc(new Date(r.created_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })) + '</figcaption>' + (mine ? '<div class="bt"><button data-t="' + r.id + ':' + (r.is_public ? 0 : 1) + '" type="button">' + (r.is_public ? '非公開にする' : '公開する') + '</button><button data-x="' + r.id + '" type="button">消す</button></div>' : '') + '</figure>').join('');
+  list.querySelectorAll('[data-t]').forEach(b => b.onclick = async () => { const [id, pub] = b.dataset.t.split(':'); b.disabled = true; try { await sb.rpc('gp_photo_set_public', { p_id: id, p_public: pub === '1' }); } catch (e) { /* noop */ } loadGallery(); });
+  list.querySelectorAll('[data-x]').forEach(b => b.onclick = async () => { if (!confirm('この写真を消します。よろしいですか？（取り消せません）')) return; b.disabled = true; try { const { data } = await sb.rpc('gp_photo_delete', { p_id: b.dataset.x }); if (data) await sb.storage.from(PH_BUCKET).remove([data]); } catch (e) { /* noop */ } loadGallery(); });
+}
+$('gaPub').onclick = () => { galTab = 'pub'; loadGallery(); };
+$('gaMine').onclick = () => { galTab = 'mine'; loadGallery(); };
+$('galCard').addEventListener('toggle', () => { if ($('galCard').open) loadGallery(); });
+if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
+
 /* ---------- 起動 ---------- */
-loadDay(); initMap(); renderAcct(); renderAll(); startWatch();
+loadDay(); initMap(); renderAcct(); renderAll(); startWatch(); loadRank();
 if (!anyReg() && !course.goal) setTimeout(() => toast('まず、下の「コースをつくる」で SS・フォトポイント・チェックポイント（各3か所まで）とゴールを登録しましょう'), 600);
 })();
 </script>
