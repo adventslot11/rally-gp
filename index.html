@@ -511,7 +511,8 @@ function showFocus(scroll) {
   if (pts.length === 1) { map.setView(p, 15); focusWait = true; } else { map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 17 }); focusWait = false; }
   if (scroll) scrollToMission();
 }
-function scrollToMission() { setTimeout(() => { try { $('map').parentNode.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* noop */ } }, 60); }
+let noAutoScrollUntil = 0;
+function scrollToMission() { noAutoScrollUntil = Date.now() + 4000; const go = () => { try { $('map').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }; setTimeout(go, 80); setTimeout(go, 600); }
 
 /* ---------- コース登録（地図をタップ） ---------- */
 $('setupBtn').onclick = () => { setupOpen = !(setupOpen || !!tapMode); if (tapMode) { tapMode = null; tmpA = null; bar(''); } renderAll(); };
@@ -607,7 +608,7 @@ function renderGo() {
   } const show = goIdx !== null; $('goCard').classList.toggle('hide', !show); if (!show) return;
   const s = course.ss[goIdx]; $('goTitle').textContent = 'SS' + (goIdx + 1);
   const ds = dMin(s);
-  if (!(fix && ds <= START_NEAR && fix.acc <= ACC && Date.now() - lastFixAt < 15000)) nearA = null; else if (nearA !== goIdx) { nearA = goIdx; setTimeout(() => { try { $('goBtn').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 80); }
+  if (!(fix && ds <= START_NEAR && fix.acc <= ACC && Date.now() - lastFixAt < 15000)) nearA = null; else if (nearA !== goIdx) { nearA = goIdx; if (Date.now() > noAutoScrollUntil) setTimeout(() => { try { $('goBtn').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 80); }
   $('goBtn').disabled = nearA !== goIdx; $('goBtn').textContent = nearA === goIdx ? '⏱ 計測スタート' : '⏱ スタート地点（AかB）に着くと押せます';
   $('goInfo').textContent = '道のり ' + fmtD(s.dist) + '／設定 ' + fmtS(setSec(s)) + '／満点 ' + ssMax(s) + '点　A地点かB地点のどちらからでもスタートできます' + (fix ? '（Aまで ' + fmtD(dEnd(s, 'a')) + '／Bまで ' + fmtD(dEnd(s, 'b')) + '）' : '');
 }
@@ -618,7 +619,7 @@ function renderPhoto() {
   let best = null;
   if (fix) l.forEach(i => { const d = dist(fix.lat, fix.lon, course.view[i][0], course.view[i][1]); if (best === null || d < best.d) best = { i, d }; });
   const near = best && fix.acc <= ACC && best.d <= NEAR; const wasPh = nearPh; nearPh = near ? best.i : null;
-  if (near && wasPh !== best.i) setTimeout(() => { try { $('phBtn').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 80);
+  if (near && wasPh !== best.i && Date.now() > noAutoScrollUntil) setTimeout(() => { try { $('phBtn').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 80);
   c.classList.remove('hide');
   $('phBtn').disabled = !near; $('phBtn').textContent = near ? '📸 写真を撮る（+' + PT + '点）' : '📸 フォトポイントに近づくと押せます';
   $('phInfo').textContent = near ? 'フォトポイント' + (best.i + 1) + ' に着きました！ 写真を1枚撮ると ' + PT + '点。' : (best ? 'フォトポイント' + (best.i + 1) + 'まで あと ' + fmtD(best.d) : '現在地を測っています…');
