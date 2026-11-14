@@ -451,6 +451,7 @@ function showCertificate() {
 }
 
 /* ---------- 地図 ---------- */
+let centeredOnce = false;
 let map = null, layer = null, me = null, fix = null, fitted = false, tapMode = null, tapIdx = 0, tmpA = null, focus = null, focusWait = false;
 function pinHtml(color, text) { return '<div style="position:relative;width:28px;height:36px"><div style="position:absolute;left:0;top:0;width:24px;height:24px;margin:2px;box-sizing:border-box;background:' + color + ';border:2px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 5px #0007"></div><div style="position:absolute;left:2px;top:2px;width:24px;height:24px;line-height:24px;text-align:center;color:#fff;font-weight:800;font-size:11px">' + (text || '') + '</div></div>'; }
 const pin = (c, t) => L.divIcon({ className: '', html: pinHtml(c, t), iconSize: [28, 36], iconAnchor: [14, 34] });
@@ -675,7 +676,7 @@ function onFix(c) {
   const fp = focusPos(); $('gpsmsg').textContent = '現在地を取得中（精度 約' + Math.round(c.accuracy) + 'm）' + (fp ? '　目標まで ' + fmtD(dist(fix.lat, fix.lon, fp[0], fp[1])) : '');
   if (me) me.setLatLng([fix.lat, fix.lon]); else if (map) me = L.circleMarker([fix.lat, fix.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1768c8', fillOpacity: 1 }).addTo(map);
   if (map && focusWait && focus) showFocus(false);
-  if (map && !fitted && !anyReg() && !course.goal && !tapMode) { map.setView([fix.lat, fix.lon], 14); }
+  if (map && !centeredOnce && !fitted && !anyReg() && !course.goal && !tapMode) { centeredOnce = true; map.setView([fix.lat, fix.lon], 14); }
   if (c.accuracy <= ACC) {
     ['historic'].forEach(k => regs(k).forEach(i => { if (!day[k][i] && !day.fin && dist(fix.lat, fix.lon, course[k][i][0], course[k][i][1]) <= NEAR) { day[k][i] = true; saveDay(); pop(LAB[k] + (i + 1) + ' 到着', PT); renderAll(); } }));
     if (course.goal && !day.goal && !day.fin && !run && dist(fix.lat, fix.lon, course.goal[0], course.goal[1]) <= NEAR) {
