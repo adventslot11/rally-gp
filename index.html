@@ -154,6 +154,7 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
     <div class="muted">1か月の合計点で順位が決まります。月が変わると、新しいランキングになります。</div>
     <div class="tabs"><button id="rkThis" class="btn on" type="button">今月</button><button id="rkLast" class="btn" type="button">先月</button></div>
     <div id="rkMy" class="muted" style="margin-bottom:6px"></div>
+    <div id="rkSync" class="muted" style="margin-bottom:6px;font-size:12px"></div>
     <div id="rkList"></div>
     <div id="rkNickBox" class="hide" style="margin-top:10px;border-top:2px dashed var(--line);padding-top:10px">
       <label class="muted" for="rkNick">ランキングに出るニックネーム（20文字まで）</label>
@@ -216,7 +217,7 @@ const r1 = v => Math.round(v * 10) / 10;
 const ssMax = s => r1(s.dist / 1000);
 const ssPts = (s, errSec) => Math.max(0, r1(ssMax(s) - Math.abs(errSec) / 60));
 /* 設定タイム：地図のルート案内の所要時間に、早め(1.1倍)・普通(1.375倍)・ゆっくり(1.65倍)のゆとりを持たせます（v13：従来より各10%長め） */
-const PACE = { fast: ['早め', 48], normal: ['普通', 43], slow: ['ゆっくり', 37] };   // 平均時速（km/h）。各SSの道のりから設定タイムを計算します
+const PACE = { fast: ['早め', 47], normal: ['普通', 42], slow: ['ゆっくり', 37] };   // 平均時速（km/h）。各SSの道のりから設定タイムを計算します
 let pace = 'normal';
 try { const p0 = localStorage.getItem('sampleTT_pace'); if (p0 && PACE[p0]) pace = p0; } catch (e) { /* noop */ }
 let paceBy = {};
@@ -250,7 +251,7 @@ function nextPop() {
   card.append(mk('reward-stars', '✦ ✨ ✦'), mk('reward-title', x.goal ? 'GOAL!' : 'POINT GET!'), sc); if (x.goal) card.appendChild(mk('reward-target', '目標ポイント ' + r1(x.tgt) + ' pt')); card.append(mk('reward-name', x.name), cap);
   if (x.goal && x.cert) { const cb = mk('reward-cert', '🏅 完走証明を発行', 'button'); cb.type = 'button'; cb.onclick = showCertificate; card.appendChild(cb); }
   if (!x.sticky) { const pr = mk('reward-progress'); const d = document.createElement('div'); d.style.setProperty('--rd', '15s'); pr.appendChild(d); card.appendChild(pr); }
-  const cl = mk('reward-dismiss', x.sticky ? '閉じる' : 'タップして閉じる', 'button'); cl.type = 'button'; cl.onclick = nextPop; card.appendChild(cl);
+  const cl = mk('reward-dismiss', x.sticky ? '閉じる' : 'タップして閉じる', 'button'); cl.type = 'button'; cl.onclick = () => { const g = x.goal; nextPop(); if (g) setTimeout(() => { try { $('resCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* noop */ } }, 120); }; card.appendChild(cl);
   o.appendChild(card); if (!x.sticky) o.addEventListener('click', e => { if (e.target === o) nextPop(); });
   document.body.appendChild(o); ovEl = o; try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) { /* noop */ }
   if (!x.sticky) ovT = setTimeout(nextPop, 15000);
@@ -458,12 +459,7 @@ const pin = (c, t) => L.divIcon({ className: '', html: pinHtml(c, t), iconSize: 
 function initMap() {
   if (map || typeof L === 'undefined') return;
   map = L.map('map').setView([37.4, 140.4], 8);
-  const gsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxNativeZoom: 18, maxZoom: 19, attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>' });
-  const mbx = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=' + MB_TOKEN, { tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' });
-  let pick = 'mbx'; try { pick = localStorage.getItem('gp_basemap') || 'mbx'; } catch (e) { /* noop */ }
-  (pick === 'mbx' ? mbx : gsi).addTo(map);
-  try { L.control.layers({ '日本語・詳細（地理院地図）': gsi, '世界地図（Mapbox）': mbx }, null, { position: 'topright', collapsed: true }).addTo(map);
-    map.on('baselayerchange', e => { try { localStorage.setItem('gp_basemap', e.layer === mbx ? 'mbx' : 'gsi'); } catch (x) { /* noop */ } }); } catch (e) { /* noop */ }
+  L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=' + MB_TOKEN, { tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
   layer = L.layerGroup().addTo(map);
   map.on('click', e => { if (tapMode) onTap(e.latlng.lat, e.latlng.lng); });
 }
@@ -733,7 +729,7 @@ function renderYae() {
   $('yBtn').disabled = left <= 0;
   $('yHint').textContent = left <= 0 ? 'このSSのヤエーは上限に達しました。' : 'ヤエーをしたら押してください（1回' + YAE_PT + '点・このSSで最大' + YAE_MAX + '回）。次のSSを始めるか、ゴールすると使えなくなります。';
 }
-$('yBack').onclick = () => { try { $('strip').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { window.scrollTo(0, 0); } };
+$('yBack').onclick = () => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } };
 $('yBtn').onclick = () => {
   const i = day.yaeOpen; if (i === null || run || day.fin || day.yae[i] >= YAE_MAX) return;
   try { if (!yAudio) { yAudio = new Audio(YAE_WAV); yAudio.preload = 'auto'; } const a = yAudio.cloneNode(true); a.volume = 1; const pr = a.play(); if (pr && pr.catch) pr.catch(() => { /* noop */ }); } catch (e) { /* noop */ }
@@ -839,7 +835,7 @@ if (sb) {
 const PH_BUCKET = 'gp-photos';
 const ymOf = d => d.slice(0, 7);
 const prevYm = ym => { let [y, m] = ym.split('-').map(Number); m--; if (!m) { m = 12; y--; } return y + '-' + String(m).padStart(2, '0'); };
-let rkMonth = 'this', galTab = 'pub', nickOk = false, lastSent = null, scoreT = null;
+let rkMonth = 'this', galTab = 'pub', nickOk = false, lastSent = null, scoreT = null, scoreRetry = null;
 const nickVal = () => ($('nick').value || '').trim();
 async function syncNick(msgEl) {
   const n = nickVal(); if (!sb || !user || !n) return false;
@@ -851,7 +847,11 @@ function scheduleScore() {
   scoreT = setTimeout(async () => {
     const t = total(), key = day.d + ':' + t; if (key === lastSent) return;
     if (t === 0 && lastSent === null) return;
-    try { const { error } = await sb.rpc('gp_submit_day', { p_day: day.d, p_total: t, p_detail: { fin: !!day.fin, complete: !!day.complete } }); if (!error) { lastSent = key; loadRank(); } } catch (e) { /* noop */ }
+    const st = $('rkSync'), hm = () => new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    try { const { error } = await sb.rpc('gp_submit_day', { p_day: day.d, p_total: t, p_detail: { fin: !!day.fin, complete: !!day.complete } });
+      if (!error) { lastSent = key; if (st) st.textContent = '今日の得点 ' + r1(t) + ' 点を送りました（' + hm() + '）'; loadRank(); }
+      else { if (st) st.textContent = '得点を送れませんでした：' + (error.message || '不明なエラー'); clearTimeout(scoreRetry); scoreRetry = setTimeout(scheduleScore, 15000); } }
+    catch (e) { if (st) st.textContent = '得点を送れませんでした（通信エラー）'; clearTimeout(scoreRetry); scoreRetry = setTimeout(scheduleScore, 15000); }
   }, 1500);
 }
 async function loadRank() {
@@ -860,7 +860,7 @@ async function loadRank() {
   let rows = []; try { const { data, error } = await sb.rpc('gp_monthly_ranking', { p_month: ym }); if (!error && data) rows = data; } catch (e) { /* noop */ }
   $('rkThis').classList.toggle('on', rkMonth === 'this'); $('rkLast').classList.toggle('on', rkMonth !== 'this');
   const me = rows.find(r => r.is_me);
-  $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（' + r1(Number(me.points)) + ' 点）' : (user ? 'まだ得点がありません' : ''));
+  $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（' + r1(Number(me.points)) + ' 点）' : (user ? (nickVal() ? 'まだ得点がありません' : '下の欄にニックネームを入れて「保存」を押すと、ランキングに載ります') : ''));
   box.innerHTML = rows.length ? rows.slice(0, 30).map(r => '<div class="rk' + (r.is_me ? ' me' : '') + '"><div class="pos' + (r.pos == 1 ? ' p1' : '') + '">' + (r.pos == 1 ? '👑' : r.pos) + '</div><div class="nm">' + esc(r.nickname) + '</div><div class="pt">' + r1(Number(r.points)) + ' 点</div></div>').join('') : '<div class="muted" style="padding:8px 0">まだ、ランキングに参加した人がいません。</div>';
   $('rkNickBox').classList.toggle('hide', !user); $('rkLogin').classList.toggle('hide', !!user);
   if (user && !$('rkNick').value) $('rkNick').value = nickVal();
@@ -940,7 +940,7 @@ async function loadGallery() {
 $('gaPub').onclick = () => { galTab = 'pub'; loadGallery(); };
 $('gaMine').onclick = () => { galTab = 'mine'; loadGallery(); };
 $('galCard').addEventListener('toggle', () => { if ($('galCard').open) loadGallery(); });
-if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
+if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && !nickVal()) { try { const { data } = await sb.from('gp_profiles').select('nickname').eq('user_id', session.user.id).maybeSingle(); if (data && data.nickname) { $('nick').value = data.nickname; saveProf(); if ($('rkNick')) $('rkNick').value = data.nickname; } } catch (e) { /* noop */ } } if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
 
 /* ---------- 起動 ---------- */
 loadDay(); initMap(); renderAcct(); renderAll(); startWatch(); loadRank();
