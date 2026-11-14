@@ -79,7 +79,7 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
 
 .tabs{display:flex;gap:8px;margin:6px 0 10px}.tabs .btn{flex:1;min-height:44px;font-size:15px}.tabs .btn.on{background:#223a6b;color:#fff}
 .rk{display:flex;align-items:center;gap:10px;padding:8px 6px;border-top:2px dashed var(--line)}.rk.me{background:#fff3c4;border-radius:10px}
-.rk .pos{min-width:36px;text-align:center;font-weight:900;font-size:18px;color:#223a6b}.rk .pos.p1{color:#d49a00}.rk .nm{flex:1;font-weight:800;word-break:break-all}.rk .pt{font-weight:900;white-space:nowrap}
+.rk .pos{min-width:36px;text-align:center;font-weight:900;font-size:18px;color:#223a6b}.rk .pos.p1{color:#d49a00}.rk .nm{flex:1;font-weight:800;word-break:break-all}.rk .nm small{display:block;font-weight:600;color:#5a6272;font-size:12px}.rk .pt{font-weight:900;white-space:nowrap}
 .gal{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gal figure{margin:0;border:2px solid #223a6b;border-radius:12px;overflow:hidden;background:#fff}
 .gal img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#dde4f0}.gal figcaption{padding:4px 6px;font-size:12px;color:var(--m)}
 .gal .bt{display:flex;gap:4px;padding:0 6px 6px}.gal .bt button{flex:1;min-height:34px;font-size:12px;border:2px solid #223a6b;border-radius:8px;background:#fff;font-weight:800;color:#223a6b}
@@ -159,6 +159,8 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
     <div id="rkNickBox" class="hide" style="margin-top:10px;border-top:2px dashed var(--line);padding-top:10px">
       <label class="muted" for="rkNick">ランキングに出るニックネーム（20文字まで）</label>
       <div style="display:flex;gap:8px;margin-top:4px"><input id="rkNick" maxlength="20" placeholder="例：くに" style="flex:1;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px"><button id="rkNickSave" class="btn g" type="button" style="min-height:46px">保存</button></div>
+      <label class="muted" for="rkVeh" style="display:block;margin-top:8px">ランキングに出る車両名（30文字まで・空欄でもOK）</label>
+      <input id="rkVeh" maxlength="30" placeholder="例：CB400SF" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin-top:4px">
       <div id="rkNickMsg" class="muted"></div>
     </div>
     <div id="rkLogin" class="muted hide" style="margin-top:8px">ログインすると、ランキングに参加できます（下の「アカウント」から）。</div>
@@ -839,7 +841,7 @@ let rkMonth = 'this', galTab = 'pub', nickOk = false, lastSent = null, scoreT = 
 const nickVal = () => ($('nick').value || '').trim();
 async function syncNick(msgEl) {
   const n = nickVal(); if (!sb || !user || !n) return false;
-  try { const { error } = await sb.rpc('gp_set_nickname', { p_nick: n }); if (error) throw error; nickOk = true; if (msgEl) msgEl.textContent = '✅ 保存しました'; return true; }
+  try { const { error } = await sb.rpc('gp_set_nickname', { p_nick: n, p_vehicle: ($('veh').value || '').trim() }); if (error) throw error; nickOk = true; if (msgEl) msgEl.textContent = '✅ 保存しました'; return true; }
   catch (e) { if (msgEl) msgEl.textContent = '保存できませんでした。もう一度お試しください。'; return false; }
 }
 function scheduleScore() {
@@ -861,13 +863,15 @@ async function loadRank() {
   $('rkThis').classList.toggle('on', rkMonth === 'this'); $('rkLast').classList.toggle('on', rkMonth !== 'this');
   const me = rows.find(r => r.is_me);
   $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（' + r1(Number(me.points)) + ' 点）' : (user ? (nickVal() ? 'まだ得点がありません' : '下の欄にニックネームを入れて「保存」を押すと、ランキングに載ります') : ''));
-  box.innerHTML = rows.length ? rows.slice(0, 30).map(r => '<div class="rk' + (r.is_me ? ' me' : '') + '"><div class="pos' + (r.pos == 1 ? ' p1' : '') + '">' + (r.pos == 1 ? '👑' : r.pos) + '</div><div class="nm">' + esc(r.nickname) + '</div><div class="pt">' + r1(Number(r.points)) + ' 点</div></div>').join('') : '<div class="muted" style="padding:8px 0">まだ、ランキングに参加した人がいません。</div>';
+  box.innerHTML = rows.length ? rows.slice(0, 30).map(r => '<div class="rk' + (r.is_me ? ' me' : '') + '"><div class="pos' + (r.pos == 1 ? ' p1' : '') + '">' + (r.pos == 1 ? '👑' : r.pos) + '</div><div class="nm">' + esc(r.nickname) + (r.vehicle ? '<small>🏍 ' + esc(r.vehicle) + '</small>' : '') + '</div><div class="pt">' + r1(Number(r.points)) + ' 点</div></div>').join('') : '<div class="muted" style="padding:8px 0">まだ、ランキングに参加した人がいません。</div>';
   $('rkNickBox').classList.toggle('hide', !user); $('rkLogin').classList.toggle('hide', !!user);
   if (user && !$('rkNick').value) $('rkNick').value = nickVal();
+  if (user && !$('rkVeh').value) $('rkVeh').value = ($('veh').value || '').trim();
 }
 $('rkThis').onclick = () => { rkMonth = 'this'; loadRank(); };
 $('rkLast').onclick = () => { rkMonth = 'last'; loadRank(); };
-$('rkNickSave').onclick = async () => { $('nick').value = $('rkNick').value; saveProf(); if (await syncNick($('rkNickMsg'))) { lastSent = null; scheduleScore(); loadRank(); } };
+$('rkNickSave').onclick = async () => { $('nick').value = $('rkNick').value; $('veh').value = $('rkVeh').value; saveProf(); if (await syncNick($('rkNickMsg'))) { lastSent = null; scheduleScore(); loadRank(); } };
+$('veh').addEventListener('input', () => { $('rkVeh').value = $('veh').value; clearTimeout($('veh')._t); $('veh')._t = setTimeout(() => { if (user) syncNick(null); }, 1200); });
 $('nick').addEventListener('input', () => { $('rkNick').value = $('nick').value; clearTimeout($('nick')._t); $('nick')._t = setTimeout(() => { if (user) syncNick(null); }, 1200); });
 
 /* 写真：縮小 → 公開／非公開を選ぶ → 保存 → 5点 */
@@ -940,7 +944,7 @@ async function loadGallery() {
 $('gaPub').onclick = () => { galTab = 'pub'; loadGallery(); };
 $('gaMine').onclick = () => { galTab = 'mine'; loadGallery(); };
 $('galCard').addEventListener('toggle', () => { if ($('galCard').open) loadGallery(); });
-if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && !nickVal()) { try { const { data } = await sb.from('gp_profiles').select('nickname').eq('user_id', session.user.id).maybeSingle(); if (data && data.nickname) { $('nick').value = data.nickname; saveProf(); if ($('rkNick')) $('rkNick').value = data.nickname; } } catch (e) { /* noop */ } } if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
+if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && !nickVal()) { try { const { data } = await sb.from('gp_profiles').select('nickname,vehicle').eq('user_id', session.user.id).maybeSingle(); if (data && data.nickname) { $('nick').value = data.nickname; if (data.vehicle && !$('veh').value) { $('veh').value = data.vehicle; if ($('rkVeh')) $('rkVeh').value = data.vehicle; } saveProf(); if ($('rkNick')) $('rkNick').value = data.nickname; } } catch (e) { /* noop */ } } if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
 
 /* ---------- 起動 ---------- */
 loadDay(); initMap(); renderAcct(); renderAll(); startWatch(); loadRank();
