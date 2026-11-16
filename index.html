@@ -173,6 +173,25 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
     <div id="galList" class="gal"></div>
   </details>
 
+  <details id="movCard" class="card">
+    <summary style="cursor:pointer;font-weight:900;font-size:19px;color:#223a6b">🎬 走行ムービー（SNSシェア用）</summary>
+    <div class="muted" style="margin-top:6px">走った軌跡と、撮った写真を、3Dマップのムービーにします。ムービーは、お使いの端末の中だけで作られ、サーバーには送られません。</div>
+    <label class="muted" for="movDay" style="display:block;margin-top:8px">日にち</label>
+    <select id="movDay" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin-top:4px;background:#fff"></select>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:14px"><input id="movTrim" type="checkbox" checked style="margin-top:4px">出発・到着の付近（約300m）を隠す（自宅の場所が分からないように）</label>
+    <div id="movInfo" class="muted" style="margin-top:6px"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button id="movPlay" class="btn" type="button" style="flex:1">▶ プレビュー</button><button id="movRec" class="btn g" type="button" style="flex:1">🎬 動画を作る</button></div>
+    <button id="movStop" class="btn r hide" type="button" style="width:100%;margin-top:8px">■ 中止する</button>
+    <div id="movMsg" class="muted" style="margin-top:8px"></div>
+    <canvas id="movCv" class="hide" style="display:block;width:100%;max-width:320px;margin:10px auto 0;border-radius:14px;background:#233;aspect-ratio:9/16"></canvas>
+    <div id="movOut" class="hide" style="margin-top:10px;text-align:center"><video id="movVid" controls playsinline style="width:100%;max-width:320px;border-radius:14px"></video><button id="movShare" class="btn g" type="button" style="width:100%;margin-top:8px">📤 共有・保存</button></div>
+    <div style="margin-top:12px;border-top:2px dashed var(--line);padding-top:10px">
+      <label class="btn" style="display:block;text-align:center;cursor:pointer">📂 GPXファイルを取り込む<input id="movGpx" type="file" accept=".gpx,.xml,application/gpx+xml,text/xml" style="display:none"></label>
+      <div class="muted" style="margin-top:6px;font-size:13px">・アプリを開いている間の位置が、自動で記録されます。画面を消すと、記録が止まります。<br>・1日全体の軌跡は、Garmin・Strava・Apple・Google などで記録した「GPXファイル」を取り込むと、ムービーにできます。<br>・写真は、Rally GP で撮った写真が、撮った場所に表示されます。</div>
+    </div>
+  </details>
+
+
   <div id="acct" class="card acct">
     <h2>👤 アカウント <span id="planTag" class="plan">無料お試し</span></h2>
     <div id="acctBody"></div>
@@ -669,7 +688,7 @@ function calcSpeed(c) {
   return v;
 }
 function onFix(c) {
-  fix = { lat: c.latitude, lon: c.longitude, acc: c.accuracy }; lastFixAt = Date.now();
+  fix = { lat: c.latitude, lon: c.longitude, acc: c.accuracy }; lastFixAt = Date.now(); if (c.accuracy <= 50) trkAdd(c.latitude, c.longitude);
   const v = calcSpeed(c); if (v !== null) { spd = spd * 0.2 + v * 0.8; if (run) { if (run.moving && spd < MOVE_OFF) run.moving = false; else if (!run.moving && spd >= MOVE_ON) run.moving = true; } }
   const fp = focusPos(); $('gpsmsg').textContent = '現在地を取得中（精度 約' + Math.round(c.accuracy) + 'm）' + (fp ? '　目標まで ' + fmtD(dist(fix.lat, fix.lon, fp[0], fp[1])) : '');
   if (me) me.setLatLng([fix.lat, fix.lon]); else if (map) me = L.circleMarker([fix.lat, fix.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1768c8', fillOpacity: 1 }).addTo(map);
@@ -891,9 +910,9 @@ function askVisibility(blob) {
     document.body.appendChild(el);
   });
 }
-function givePhotoPoints(i) { day.view[i] = true; saveDay(); pop('フォトポイント' + (i + 1) + ' 撮影', PT, '写真をゲット！'); renderAll(); }
+function givePhotoPoints(i, file) { if (file) addPMark(file).catch(() => {}); day.view[i] = true; saveDay(); pop('フォトポイント' + (i + 1) + ' 撮影', PT, '写真をゲット！'); renderAll(); }
 async function handlePhoto(file, i) {
-  if (!sb || !user) { givePhotoPoints(i); toast('📸 ログインすると、写真を保存して、ランキングにも参加できます'); return; }
+  if (!sb || !user) { givePhotoPoints(i, file); toast('📸 ログインすると、写真を保存して、ランキングにも参加できます'); return; }
   const blob = await shrink(file); if (blob.size > 5 * 1024 * 1024) { toast('写真が大きすぎます。もう一度撮ってください。'); return; }
   const v = await askVisibility(blob); if (v === 'x') return;
   toast('📤 写真を保存しています…');
@@ -903,7 +922,7 @@ async function handlePhoto(file, i) {
     const ad = await sb.rpc('gp_photo_add', { p_path: path, p_day: day.d, p_spot: i + 1, p_public: v === '1' });
     if (ad.error) { try { await sb.storage.from(PH_BUCKET).remove([path]); } catch (e) { /* noop */ } throw ad.error; }
   } catch (e) { toast('写真を保存できませんでした。電波のよい所で、もう一度お試しください。'); return; }
-  $('toast').style.display = 'none'; givePhotoPoints(i); if ($('galCard').open) loadGallery();
+  $('toast').style.display = 'none'; givePhotoPoints(i, file); if ($('galCard').open) loadGallery();
 }
 
 /* ギャラリー */
@@ -945,6 +964,198 @@ $('gaPub').onclick = () => { galTab = 'pub'; loadGallery(); };
 $('gaMine').onclick = () => { galTab = 'mine'; loadGallery(); };
 $('galCard').addEventListener('toggle', () => { if ($('galCard').open) loadGallery(); });
 if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && !nickVal()) { try { const { data } = await sb.from('gp_profiles').select('nickname,vehicle').eq('user_id', session.user.id).maybeSingle(); if (data && data.nickname) { $('nick').value = data.nickname; if (data.vehicle && !$('veh').value) { $('veh').value = data.vehicle; if ($('rkVeh')) $('rkVeh').value = data.vehicle; } saveProf(); if ($('rkNick')) $('rkNick').value = data.nickname; } } catch (e) { /* noop */ } } if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
+
+/* ---------- 走行ムービー（端末の中だけで作る） ---------- */
+const TRK = 'gp_trk_', PMK = 'gp_pm_', MB_JS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js', MB_CSS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css';
+const MW = 576, MH = 1024;
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const trkLoad = d => { const a = lsGet(TRK + d); return Array.isArray(a) ? a : []; };
+let trkToday = null, mov = null, movBlob = null, movName = '', movPruned = false;
+function trkPrune() {
+  try {
+    const ds = new Set(); for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && (k.indexOf(TRK) === 0 || k.indexOf(PMK) === 0)) ds.add(k.slice(-10)); }
+    const keep = [...ds].sort().reverse().slice(0, 7); [...ds].forEach(d => { if (keep.indexOf(d) < 0) { localStorage.removeItem(TRK + d); localStorage.removeItem(PMK + d); } });
+  } catch (e) { /* noop */ }
+}
+function trkFlush() {
+  if (!trkToday || !trkToday.dirty) return;
+  if (lsSet(TRK + trkToday.d, trkToday.a)) trkToday.dirty = false;
+  trkToday.saved = Date.now(); if (!movPruned) { movPruned = true; trkPrune(); }
+}
+function trkAdd(la, lo) {
+  const d = today(); if (!trkToday || trkToday.d !== d) { trkFlush(); trkToday = { d, a: trkLoad(d), dirty: false, saved: 0 }; }
+  const a = trkToday.a, l = a[a.length - 1]; if (l && dist(l[0], l[1], la, lo) < 10) return;
+  a.push([Math.round(la * 1e5) / 1e5, Math.round(lo * 1e5) / 1e5, Math.round(Date.now() / 1000)]); trkToday.dirty = true;
+  if (a.length > 8000) trkToday.a = a.filter((_, i) => i % 2 === 0 || i === a.length - 1);
+  if (Date.now() - trkToday.saved > 15000) trkFlush();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) trkFlush(); });
+window.addEventListener('pagehide', trkFlush);
+
+async function pmThumb(file) {
+  try { const bmp = await createImageBitmap(file); const m = Math.min(1, 320 / Math.max(bmp.width, bmp.height)); const c = document.createElement('canvas'); c.width = Math.round(bmp.width * m); c.height = Math.round(bmp.height * m); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.7); } catch (e) { return null; }
+}
+async function addPMark(file) {
+  if (!fix) return; const img = await pmThumb(file); if (!img) return;
+  const a = lsGet(PMK + day.d) || []; a.push({ lat: Math.round(fix.lat * 1e5) / 1e5, lon: Math.round(fix.lon * 1e5) / 1e5, t: Math.round(Date.now() / 1000), img }); lsSet(PMK + day.d, a.slice(-12));
+}
+
+function parseGpx(text) {
+  const x = new DOMParser().parseFromString(text, 'application/xml'); if (x.getElementsByTagName('parsererror').length) return null;
+  let ps = [...x.getElementsByTagName('trkpt')]; if (!ps.length) ps = [...x.getElementsByTagName('rtept')];
+  const out = []; ps.forEach(p => { const la = parseFloat(p.getAttribute('lat')), lo = parseFloat(p.getAttribute('lon')); if (!isFinite(la) || !isFinite(lo)) return; const te = p.getElementsByTagName('time')[0]; out.push([la, lo, te ? Math.round(Date.parse(te.textContent) / 1000) : NaN]); });
+  if (out.length < 2) return null;
+  const th = [out[0]]; out.forEach(q => { const l = th[th.length - 1]; if (dist(l[0], l[1], q[0], q[1]) >= 10) th.push(q); });
+  let a = th; while (a.length > 8000) a = a.filter((_, i) => i % 2 === 0);
+  const t0 = a.find(q => isFinite(q[2]));
+  const d = t0 ? new Date(t0[2] * 1000).toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }) : today();
+  return { d, a: a.map(q => [Math.round(q[0] * 1e5) / 1e5, Math.round(q[1] * 1e5) / 1e5, isFinite(q[2]) ? q[2] : 0]) };
+}
+function prepTrack(a, trim) {
+  const p = a.map(x => [x[0], x[1]]); if (p.length < 2) return null;
+  const cum = [0]; for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + dist(p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]));
+  const total = cum[cum.length - 1]; if (total < 300) return null;
+  let s = 0, e = total; if (trim && total > 1500) { s = 300; e = total - 300; }
+  const N = Math.min(600, Math.max(60, Math.round((e - s) / 25))), out = []; let j = 0;
+  for (let k = 0; k < N; k++) { const dd = s + (e - s) * k / (N - 1); while (j < cum.length - 2 && cum[j + 1] < dd) j++; const seg = cum[j + 1] - cum[j] || 1, f = Math.min(1, Math.max(0, (dd - cum[j]) / seg)); out.push([p[j][0] + (p[j + 1][0] - p[j][0]) * f, p[j][1] + (p[j + 1][1] - p[j][1]) * f]); }
+  const sm = out.map((q, i) => { if (i === 0 || i === N - 1) return q; let la = 0, lo = 0, n = 0; for (let d = -3; d <= 3; d++) { const r = out[i + d]; if (r) { la += r[0]; lo += r[1]; n++; } } return [la / n, lo / n]; });
+  return { pts: sm, len: e - s, total };
+}
+const brg = (a, b) => { const r = Math.PI / 180, y = Math.sin((b[1] - a[1]) * r) * Math.cos(b[0] * r), x = Math.cos(a[0] * r) * Math.sin(b[0] * r) - Math.sin(a[0] * r) * Math.cos(b[0] * r) * Math.cos((b[1] - a[1]) * r); return (Math.atan2(y, x) / r + 360) % 360; };
+const angDiff = (a, b) => ((b - a + 540) % 360) - 180;
+const ease = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
+
+function movDays() {
+  const ds = new Set(); try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf(TRK) === 0) ds.add(k.slice(-10)); } } catch (e) { /* noop */ }
+  return [...ds].sort().reverse();
+}
+function movRefresh(sel) {
+  trkFlush(); const ds = movDays(), cur = sel || $('movDay').value;
+  $('movDay').innerHTML = ds.map(d => { const t = prepTrack(trkLoad(d), false); return '<option value="' + d + '">' + d.slice(5).replace('-', '月') + '日（' + (t ? (t.total / 1000).toFixed(1) + ' km' : '短すぎます') + '）</option>'; }).join('');
+  if (ds.indexOf(cur) >= 0) $('movDay').value = cur;
+  $('movInfo').textContent = ds.length ? '' : 'まだ軌跡がありません。走るとき、アプリを開いたままにすると、位置が記録されます。（1日全体のログは、下の「GPXファイル」から取り込めます）';
+  $('movPlay').disabled = $('movRec').disabled = !ds.length;
+}
+const movMsg = t => { $('movMsg').textContent = t || ''; };
+function loadMapbox() {
+  if (window.mapboxgl) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = MB_CSS; document.head.appendChild(l);
+    const s = document.createElement('script'); s.src = MB_JS; s.onload = res; s.onerror = () => rej(new Error('mapbox')); document.head.appendChild(s);
+  });
+}
+function pickMime() { const c = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']; if (!window.MediaRecorder) return ''; for (const m of c) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) { /* noop */ } } return ''; }
+function withDpr1(fn) {
+  const desc = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio'); let changed = false;
+  try { Object.defineProperty(window, 'devicePixelRatio', { get: () => 1, configurable: true }); changed = true; } catch (e) { /* noop */ }
+  try { return fn(); } finally { if (changed) { try { if (desc) Object.defineProperty(window, 'devicePixelRatio', desc); else delete window.devicePixelRatio; } catch (e) { /* noop */ } } }
+}
+function rr(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
+function drawOverlay(x, S) {
+  x.clearRect(0, 0, MW, MH); if (S.mapCv) { try { x.drawImage(S.mapCv, 0, 0, MW, MH); } catch (e) { x.fillStyle = '#233'; x.fillRect(0, 0, MW, MH); } } else { x.fillStyle = '#233'; x.fillRect(0, 0, MW, MH); }
+  let g = x.createLinearGradient(0, 0, 0, 200); g.addColorStop(0, 'rgba(0,0,0,.65)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, MW, 200);
+  g = x.createLinearGradient(0, MH - 260, 0, MH); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.75)'); x.fillStyle = g; x.fillRect(0, MH - 260, MW, 260);
+  x.textBaseline = 'alphabetic'; x.textAlign = 'left'; x.fillStyle = '#fff'; x.font = '900 40px sans-serif'; x.fillText('RALLY GP', 28, 62);
+  x.font = '700 24px sans-serif'; x.fillText(S.dateTxt, 28, 98);
+  x.textAlign = 'right'; x.font = '800 28px sans-serif'; x.fillText(S.nick, MW - 28, 62); x.font = '600 22px sans-serif'; if (S.veh) x.fillText('🏍 ' + S.veh, MW - 28, 96);
+  x.textAlign = 'left'; x.font = '900 64px sans-serif'; x.fillStyle = '#fff'; x.fillText(S.km.toFixed(1), 28, MH - 120); const kw = x.measureText(S.km.toFixed(1)).width; x.font = '700 26px sans-serif'; x.fillText('km', 28 + kw + 8, MH - 120);
+  if (S.pts != null) { x.textAlign = 'right'; x.font = '900 64px sans-serif'; x.fillText(String(r1(S.pts)), MW - 100, MH - 120); x.font = '700 26px sans-serif'; x.fillText('点', MW - 28, MH - 120); }
+  x.fillStyle = 'rgba(255,255,255,.35)'; rr(x, 28, MH - 86, MW - 56, 10, 5); x.fill(); x.fillStyle = '#ff4b3a'; rr(x, 28, MH - 86, Math.max(10, (MW - 56) * S.prog), 10, 5); x.fill();
+  x.textAlign = 'left'; x.fillStyle = 'rgba(255,255,255,.85)'; x.font = '600 16px sans-serif'; x.fillText('© Mapbox © OpenStreetMap', 28, MH - 24); x.textAlign = 'right'; x.fillText('rally-gp.vercel.app', MW - 28, MH - 24);
+  if (S.photo && S.photo.img && S.photoA > 0) {
+    const im = S.photo.img, sc = Math.min(380 / im.width, 380 / im.height), w = im.width * sc, h = im.height * sc, cx = MW / 2, cy = MH * 0.42;
+    x.save(); x.globalAlpha = S.photoA; x.translate(cx, cy + (1 - S.photoA) * 40); x.rotate(-0.04); x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 24; x.fillStyle = '#fff'; x.fillRect(-w / 2 - 14, -h / 2 - 14, w + 28, h + 60); x.shadowBlur = 0; x.drawImage(im, -w / 2, -h / 2, w, h); x.fillStyle = '#223a6b'; x.font = '800 22px sans-serif'; x.textAlign = 'center'; x.fillText('📸 フォトポイント', 0, h / 2 + 38); x.restore();
+  }
+  if (S.endA > 0) {
+    x.save(); x.globalAlpha = S.endA * 0.55; x.fillStyle = '#000'; x.fillRect(0, 0, MW, MH); x.globalAlpha = S.endA; x.textAlign = 'center'; x.fillStyle = '#fff';
+    x.font = '900 46px sans-serif'; x.fillText('RALLY GP', MW / 2, MH * 0.34); x.font = '700 28px sans-serif'; x.fillText(S.dateTxt, MW / 2, MH * 0.34 + 44);
+    x.font = '900 110px sans-serif'; x.fillText(S.kmTotal.toFixed(1) + ' km', MW / 2, MH * 0.5);
+    if (S.pts != null) { x.font = '900 72px sans-serif'; x.fillStyle = '#ffd95a'; x.fillText(String(r1(S.pts)) + ' 点', MW / 2, MH * 0.6); }
+    x.fillStyle = '#fff'; x.font = '800 32px sans-serif'; x.fillText(S.nick, MW / 2, MH * 0.7); if (S.veh) { x.font = '600 26px sans-serif'; x.fillText('🏍 ' + S.veh, MW / 2, MH * 0.7 + 40); }
+    x.restore();
+  }
+}
+async function runMovie(record) {
+  if (mov) return; const d = $('movDay').value; if (!d) return;
+  const tr = prepTrack(trkLoad(d), $('movTrim').checked); if (!tr) { movMsg('軌跡が短すぎて、ムービーにできません（約300m以上走ってください）。'); return; }
+  const pts = tr.pts, n = pts.length;
+  const photos = (lsGet(PMK + d) || []).map(m => { let bi = -1, bd = 1e9; pts.forEach((q, i) => { const dd = dist(q[0], q[1], m.lat, m.lon); if (dd < bd) { bd = dd; bi = i; } }); return bd <= 300 ? { i: bi, src: m.img, img: null } : null; }).filter(Boolean).sort((a, b) => a.i - b.i);
+  const cv = $('movCv'), cx = cv.getContext('2d'); cv.width = MW; cv.height = MH; cv.classList.remove('hide');
+  const S = { mapCv: null, dateTxt: d.slice(5).replace('-', '月') + '日', nick: nickVal() || 'ライダー', veh: ($('veh').value || '').trim(), km: 0, kmTotal: tr.len / 1000, pts: (d === day.d ? total() : null), prog: 0, photo: null, photoA: 0, endA: 0 };
+  mov = { stop: false }; $('movPlay').disabled = $('movRec').disabled = true; $('movStop').classList.remove('hide'); $('movOut').classList.add('hide'); movBlob = null;
+  let map = null, rec = null, chunks = [], mime = '';
+  const cleanup = () => { try { if (map) map.remove(); } catch (e) { /* noop */ } const b = $('movMapBox'); if (b) b.remove(); mov = null; $('movStop').classList.add('hide'); movRefresh(d); };
+  try {
+    movMsg('地図を読み込んでいます…（通信状況により、少し時間がかかります）');
+    await loadMapbox(); await Promise.all(photos.map(p => new Promise(r => { const im = new Image(); im.onload = () => { p.img = im; r(); }; im.onerror = r; im.src = p.src; })));
+    const box = document.createElement('div'); box.id = 'movMapBox'; box.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + MW + 'px;height:' + MH + 'px;pointer-events:none'; document.body.appendChild(box);
+    const zRun = tr.total < 20000 ? 14.8 : tr.total < 80000 ? 14 : 13.2;
+    mapboxgl.accessToken = MB_TOKEN;
+    map = withDpr1(() => new mapboxgl.Map({ container: box, style: 'mapbox://styles/mapbox/satellite-streets-v12', center: [pts[0][1], pts[0][0]], zoom: zRun - 3, pitch: 40, bearing: brg(pts[0], pts[Math.min(n - 1, 6)]), interactive: false, attributionControl: false, preserveDrawingBuffer: true, fadeDuration: 0 }));
+    await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('style')), 20000); map.on('style.load', () => { clearTimeout(to); res(); }); map.on('error', e => { if (e && e.error && /401|403/.test(String(e.error.status))) rej(new Error('auth')); }); });
+    map.addSource('mapbox-dem', { type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize: 512, maxzoom: 14 }); map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.4 });
+    map.addSource('trail', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[pts[0][1], pts[0][0]], [pts[0][1], pts[0][0]]] } } });
+    map.addLayer({ id: 'trail-c', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 9 } });
+    map.addLayer({ id: 'trail-l', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ff3b2f', 'line-width': 5.5 } });
+    map.addSource('head', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: [pts[0][1], pts[0][0]] } } });
+    map.addLayer({ id: 'head-c', type: 'circle', source: 'head', paint: { 'circle-radius': 9, 'circle-color': '#1768c8', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
+    await new Promise(res => { const to = setTimeout(res, 8000); map.once('idle', () => { clearTimeout(to); res(); }); });
+    S.mapCv = map.getCanvas();
+    if (record) { mime = pickMime(); if (!mime) { movMsg('この端末では、動画の保存に対応していません。プレビューのみ再生します。'); record = false; } }
+    if (record) { const st = cv.captureStream(30); rec = new MediaRecorder(st, { mimeType: mime, videoBitsPerSecond: 4000000 }); rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; rec.start(500); }
+    movMsg(record ? '🎬 ムービーを作っています…そのままお待ちください（画面を閉じないでください）' : '▶ プレビュー再生中');
+    const mainSec = Math.min(30, Math.max(12, 10 + tr.len / 1000 * 0.6)), speed = (n - 1) / mainSec;
+    let phase = 'intro', ph0 = performance.now(), last = ph0, pos = 0, pi = 0, hold = 0, holdAll = 0, bear = map.getBearing();
+    await new Promise(done => {
+      const frame = ts => {
+        if (mov.stop) { done(); return; }
+        const dt = Math.min(0.1, (ts - last) / 1000); last = ts;
+        let zoom = zRun, pitch = 62, a = 0;
+        if (phase === 'intro') { const e = ease((ts - ph0) / 1500); zoom = zRun - 3 + 3 * e; pitch = 40 + 22 * e; if (e >= 1) phase = 'run'; }
+        else if (phase === 'run') {
+          if (hold > 0) { hold -= dt; const el = holdAll - hold; S.photoA = Math.min(1, el / 0.35, hold / 0.35 + 0.0001); if (hold <= 0) { S.photo = null; S.photoA = 0; } }
+          else { pos += speed * dt; if (pi < photos.length && pos >= photos[pi].i) { pos = photos[pi].i; S.photo = photos[pi]; hold = holdAll = 2.4; pi++; } }
+          if (pos >= n - 1) { pos = n - 1; phase = 'end'; ph0 = ts; S.photo = null; S.photoA = 0; }
+        }
+        if (phase === 'end') { const e = ease((ts - ph0) / 2500); zoom = zRun - 1.8 * e; pitch = 62 - 20 * e; S.endA = ease((ts - ph0 - 600) / 1200); if (ts - ph0 > 4200) { done(); return; } }
+        const i = Math.min(n - 2, Math.floor(pos)), f = pos - i, p = [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f];
+        const tb = brg(pts[i], pts[Math.min(n - 1, i + 7)]); bear = (bear + angDiff(bear, tb) * (1 - Math.exp(-dt * 2.5)) + 360) % 360;
+        try { map.jumpTo({ center: [p[1], p[0]], zoom, pitch, bearing: phase === 'end' ? (bear + 25 * ease((ts - ph0) / 4200)) % 360 : bear }); const co = pts.slice(0, i + 1).map(q => [q[1], q[0]]); co.push([p[1], p[0]]); if (co.length < 2) co.push(co[0]); map.getSource('trail').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: co } }); map.getSource('head').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [p[1], p[0]] } }); } catch (e) { /* noop */ }
+        S.km = pos * tr.len / (n - 1) / 1000; S.prog = pos / (n - 1);
+        drawOverlay(cx, S); requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+    if (rec) {
+      await new Promise(r => { rec.onstop = r; try { rec.stop(); } catch (e) { r(); } });
+      const base = (rec.mimeType || mime).split(';')[0]; movBlob = new Blob(chunks, { type: base }); movName = 'rally-gp_' + d.replace(/-/g, '') + (base.indexOf('mp4') >= 0 ? '.mp4' : '.webm');
+      if (movBlob.size > 1000) { const v = $('movVid'); try { URL.revokeObjectURL(v.src); } catch (e) { /* noop */ } v.src = URL.createObjectURL(movBlob); $('movOut').classList.remove('hide'); movMsg('✅ できました！ 下の「共有・保存」を押してください。'); } else movMsg('動画を作れませんでした。もう一度お試しください。');
+    } else movMsg(mov && mov.stop ? '停止しました。' : 'プレビューが終わりました。');
+  } catch (e) {
+    movMsg(e && e.message === 'auth' ? '地図を表示できませんでした（認証エラー）。' : '地図を読み込めませんでした。電波のよい所で、もう一度お試しください。');
+    try { if (rec && rec.state !== 'inactive') rec.stop(); } catch (e2) { /* noop */ }
+  }
+  cleanup();
+}
+$('movPlay').onclick = () => runMovie(false);
+$('movRec').onclick = () => { if (!premium) { showUpsell('走行ムービーの保存は、プレミアムの機能です。（プレビューは無料でお試しいただけます）'); return; } runMovie(true); };
+$('movStop').onclick = () => { if (mov) mov.stop = true; };
+$('movShare').onclick = async () => {
+  if (!movBlob) return; const f = new File([movBlob], movName, { type: movBlob.type });
+  try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Rally GP', text: '#RallyGP' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(movBlob); a.download = movName; document.body.appendChild(a); a.click(); a.remove();
+};
+$('movGpx').onchange = async ev => {
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; if (!f) return;
+  if (f.size > 20 * 1024 * 1024) { movMsg('ファイルが大きすぎます（20MBまで）。'); return; }
+  let g = null; try { g = parseGpx(await f.text()); } catch (e) { g = null; }
+  if (!g) { movMsg('GPXファイルを読み取れませんでした。'); return; }
+  if (trkLoad(g.d).length && !confirm(g.d.slice(5).replace('-', '月') + '日の軌跡は、すでにあります。GPXの内容で置き換えますか？')) return;
+  if (!lsSet(TRK + g.d, g.a)) { movMsg('保存できませんでした。ファイルが大きすぎる可能性があります。'); return; }
+  movRefresh(g.d); movMsg('✅ ' + g.d.slice(5).replace('-', '月') + '日の軌跡を取り込みました（' + g.a.length + '点）。');
+};
+$('movCard').addEventListener('toggle', () => { if ($('movCard').open) movRefresh(); });
 
 /* ---------- 起動 ---------- */
 loadDay(); initMap(); renderAcct(); renderAll(); startWatch(); loadRank();
