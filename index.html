@@ -79,7 +79,7 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
 
 .tabs{display:flex;gap:8px;margin:6px 0 10px}.tabs .btn{flex:1;min-height:44px;font-size:15px}.tabs .btn.on{background:#223a6b;color:#fff}
 .rk{display:flex;align-items:center;gap:10px;padding:8px 6px;border-top:2px dashed var(--line)}.rk.me{background:#fff3c4;border-radius:10px}
-.rk .pos{min-width:36px;text-align:center;font-weight:900;font-size:18px;color:#223a6b}.rk .pos.p1{color:#d49a00}.rk .nm{flex:1;font-weight:800;word-break:break-all}.rk .nm small{display:block;font-weight:600;color:#5a6272;font-size:12px}.rk .pt{font-weight:900;white-space:nowrap}
+.rk .pos{min-width:36px;text-align:center;font-weight:900;font-size:18px;color:#223a6b}.rk .pos.p1{color:#d49a00}.rk .nm{flex:1;font-weight:800;word-break:break-all}.rk .nm small{display:block;font-weight:600;color:#5a6272;font-size:12px}.rk .pt{font-weight:900;white-space:nowrap;text-align:right}.rk .pt small{display:block;font-weight:600;color:#5a6272;font-size:11px}
 .gal{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gal figure{margin:0;border:2px solid #223a6b;border-radius:12px;overflow:hidden;background:#fff}
 .gal img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#dde4f0}.gal figcaption{padding:4px 6px;font-size:12px;color:var(--m)}
 .gal .bt{display:flex;gap:4px;padding:0 6px 6px}.gal .bt button{flex:1;min-height:34px;font-size:12px;border:2px solid #223a6b;border-radius:8px;background:#fff;font-weight:800;color:#223a6b}
@@ -151,7 +151,7 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
 
   <div id="rankCard" class="card">
     <h2>🏆 月間ランキング</h2>
-    <div class="muted">1か月の合計点で順位が決まります。月が変わると、新しいランキングになります。</div>
+    <div class="muted"><b>その月の1日〜末日の「合計点」</b>で順位が決まります（毎日の得点が、合計に足されていきます）。月が変わると、新しいランキングになります。</div>
     <div class="tabs"><button id="rkThis" class="btn on" type="button">今月</button><button id="rkLast" class="btn" type="button">先月</button></div>
     <div id="rkMy" class="muted" style="margin-bottom:6px"></div>
     <div id="rkSync" class="muted" style="margin-bottom:6px;font-size:12px"></div>
@@ -261,7 +261,7 @@ $('toast').onclick = () => { $('toast').style.display = 'none'; };
 /* 得点のポップアップ：Rally TT と同じ「POINT GET!」の見た目。各ポイントは15秒で消えます。ゴールだけは、ボタンを押すまで消えません */
 const ovQ = [];
 let ovEl = null, ovT = null;
-function pop(name, pts, caption, sticky, goal, tgt, cert) { ovQ.push({ name, pts, caption, sticky, goal, tgt, cert }); if (!ovEl) nextPop(); }
+function pop(name, pts, caption, sticky, goal, tgt, cert) { try { movEv(name, pts); } catch (e) { /* noop */ } ovQ.push({ name, pts, caption, sticky, goal, tgt, cert }); if (!ovEl) nextPop(); }
 function nextPop() {
   clearTimeout(ovT); if (ovEl) { ovEl.remove(); ovEl = null; }
   const x = ovQ.shift(); if (!x) return;
@@ -756,7 +756,7 @@ $('yBtn').onclick = () => {
   try { if (!yAudio) { yAudio = new Audio(YAE_WAV); yAudio.preload = 'auto'; } const a = yAudio.cloneNode(true); a.volume = 1; const pr = a.play(); if (pr && pr.catch) pr.catch(() => { /* noop */ }); } catch (e) { /* noop */ }
   try { if (navigator.vibrate) navigator.vibrate(30); } catch (e) { /* noop */ }
   const pl = document.createElement('span'); pl.className = 'yp'; pl.textContent = '+' + YAE_PT; $('yWrap').appendChild(pl); setTimeout(() => pl.remove(), 900);
-  day.yae[i]++; saveDay(); renderStrip(); renderRes(); renderYae();
+  day.yae[i]++; try { evAdd('yae', 'ヤエー！', YAE_PT); } catch (e) { /* noop */ } saveDay(); renderStrip(); renderRes(); renderYae();
 };
 
 /* ---------- アカウント・プレミアム（Stripe課金） ---------- */
@@ -881,8 +881,8 @@ async function loadRank() {
   let rows = []; try { const { data, error } = await sb.rpc('gp_monthly_ranking', { p_month: ym }); if (!error && data) rows = data; } catch (e) { /* noop */ }
   $('rkThis').classList.toggle('on', rkMonth === 'this'); $('rkLast').classList.toggle('on', rkMonth !== 'this');
   const me = rows.find(r => r.is_me);
-  $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（' + r1(Number(me.points)) + ' 点）' : (user ? (nickVal() ? 'まだ得点がありません' : '下の欄にニックネームを入れて「保存」を押すと、ランキングに載ります') : ''));
-  box.innerHTML = rows.length ? rows.slice(0, 30).map(r => '<div class="rk' + (r.is_me ? ' me' : '') + '"><div class="pos' + (r.pos == 1 ? ' p1' : '') + '">' + (r.pos == 1 ? '👑' : r.pos) + '</div><div class="nm">' + esc(r.nickname) + (r.vehicle ? '<small>🏍 ' + esc(r.vehicle) + '</small>' : '') + '</div><div class="pt">' + r1(Number(r.points)) + ' 点</div></div>').join('') : '<div class="muted" style="padding:8px 0">まだ、ランキングに参加した人がいません。</div>';
+  $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（今月の合計 ' + r1(Number(me.points)) + ' 点）' : (user ? (nickVal() ? 'まだ得点がありません' : '下の欄にニックネームを入れて「保存」を押すと、ランキングに載ります') : ''));
+  box.innerHTML = rows.length ? rows.slice(0, 30).map(r => '<div class="rk' + (r.is_me ? ' me' : '') + '"><div class="pos' + (r.pos == 1 ? ' p1' : '') + '">' + (r.pos == 1 ? '👑' : r.pos) + '</div><div class="nm">' + esc(r.nickname) + (r.vehicle ? '<small>🏍 ' + esc(r.vehicle) + '</small>' : '') + '</div><div class="pt">' + r1(Number(r.points)) + ' 点<small>' + (r.days ? r.days + '日分の合計' : '合計') + '</small></div></div>').join('') : '<div class="muted" style="padding:8px 0">まだ、ランキングに参加した人がいません。</div>';
   $('rkNickBox').classList.toggle('hide', !user); $('rkLogin').classList.toggle('hide', !!user);
   if (user && !$('rkNick').value) $('rkNick').value = nickVal();
   if (user && !$('rkVeh').value) $('rkVeh').value = ($('veh').value || '').trim();
@@ -966,7 +966,7 @@ $('galCard').addEventListener('toggle', () => { if ($('galCard').open) loadGalle
 if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && !nickVal()) { try { const { data } = await sb.from('gp_profiles').select('nickname,vehicle').eq('user_id', session.user.id).maybeSingle(); if (data && data.nickname) { $('nick').value = data.nickname; if (data.vehicle && !$('veh').value) { $('veh').value = data.vehicle; if ($('rkVeh')) $('rkVeh').value = data.vehicle; } saveProf(); if ($('rkNick')) $('rkNick').value = data.nickname; } } catch (e) { /* noop */ } } if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
 
 /* ---------- 走行ムービー（端末の中だけで作る） ---------- */
-const TRK = 'gp_trk_', PMK = 'gp_pm_', MB_JS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js', MB_CSS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css';
+const TRK = 'gp_trk_', PMK = 'gp_pm_', EVK = 'gp_ev_', MB_JS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js', MB_CSS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css';
 const MW = 576, MH = 1024;
 const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
@@ -974,8 +974,8 @@ const trkLoad = d => { const a = lsGet(TRK + d); return Array.isArray(a) ? a : [
 let trkToday = null, mov = null, movBlob = null, movName = '', movPruned = false;
 function trkPrune() {
   try {
-    const ds = new Set(); for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && (k.indexOf(TRK) === 0 || k.indexOf(PMK) === 0)) ds.add(k.slice(-10)); }
-    const keep = [...ds].sort().reverse().slice(0, 7); [...ds].forEach(d => { if (keep.indexOf(d) < 0) { localStorage.removeItem(TRK + d); localStorage.removeItem(PMK + d); } });
+    const ds = new Set(); for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && (k.indexOf(TRK) === 0 || k.indexOf(PMK) === 0 || k.indexOf(EVK) === 0)) ds.add(k.slice(-10)); }
+    const keep = [...ds].sort().reverse().slice(0, 7); [...ds].forEach(d => { if (keep.indexOf(d) < 0) { localStorage.removeItem(TRK + d); localStorage.removeItem(PMK + d); localStorage.removeItem(EVK + d); } });
   } catch (e) { /* noop */ }
 }
 function trkFlush() {
@@ -998,8 +998,12 @@ async function pmThumb(file) {
 }
 async function addPMark(file) {
   if (!fix) return; const img = await pmThumb(file); if (!img) return;
-  const a = lsGet(PMK + day.d) || []; a.push({ lat: Math.round(fix.lat * 1e5) / 1e5, lon: Math.round(fix.lon * 1e5) / 1e5, t: Math.round(Date.now() / 1000), img }); lsSet(PMK + day.d, a.slice(-12));
+  const a = lsGet(PMK + day.d) || []; a.push({ lat: Math.round(fix.lat * 1e5) / 1e5, lon: Math.round(fix.lon * 1e5) / 1e5, t: Math.round(Date.now() / 1000), img, pts: PT }); lsSet(PMK + day.d, a.slice(-12));
 }
+function evAdd(k, label, pts) {
+  if (!fix) return; const a = lsGet(EVK + day.d) || []; a.push({ k, label, pts: r1(pts), lat: Math.round(fix.lat * 1e5) / 1e5, lon: Math.round(fix.lon * 1e5) / 1e5, t: Math.round(Date.now() / 1000) }); lsSet(EVK + day.d, a.slice(-60));
+}
+function movEv(name, pts) { let k = null; if (/^SS\d+ ゴール$/.test(name)) k = 'ss'; else if (/ 到着$/.test(name)) k = 'cp'; if (k) evAdd(k, name, pts); }
 
 function parseGpx(text) {
   const x = new DOMParser().parseFromString(text, 'application/xml'); if (x.getElementsByTagName('parsererror').length) return null;
@@ -1063,9 +1067,18 @@ function drawOverlay(x, S) {
   if (S.pts != null) { x.textAlign = 'right'; x.font = '900 64px sans-serif'; x.fillText(String(r1(S.pts)), MW - 100, MH - 120); x.font = '700 26px sans-serif'; x.fillText('点', MW - 28, MH - 120); }
   x.fillStyle = 'rgba(255,255,255,.35)'; rr(x, 28, MH - 86, MW - 56, 10, 5); x.fill(); x.fillStyle = '#ff4b3a'; rr(x, 28, MH - 86, Math.max(10, (MW - 56) * S.prog), 10, 5); x.fill();
   x.textAlign = 'left'; x.fillStyle = 'rgba(255,255,255,.85)'; x.font = '600 16px sans-serif'; x.fillText('© Mapbox © OpenStreetMap', 28, MH - 24); x.textAlign = 'right'; x.fillText('rally-gp.vercel.app', MW - 28, MH - 24);
-  if (S.photo && S.photo.img && S.photoA > 0) {
-    const im = S.photo.img, sc = Math.min(380 / im.width, 380 / im.height), w = im.width * sc, h = im.height * sc, cx = MW / 2, cy = MH * 0.42;
-    x.save(); x.globalAlpha = S.photoA; x.translate(cx, cy + (1 - S.photoA) * 40); x.rotate(-0.04); x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 24; x.fillStyle = '#fff'; x.fillRect(-w / 2 - 14, -h / 2 - 14, w + 28, h + 60); x.shadowBlur = 0; x.drawImage(im, -w / 2, -h / 2, w, h); x.fillStyle = '#223a6b'; x.font = '800 22px sans-serif'; x.textAlign = 'center'; x.fillText('📸 フォトポイント', 0, h / 2 + 38); x.restore();
+  if (S.photo && S.photoA > 0) {
+    const ev = S.photo;
+    if (ev.k === 'photo' && ev.img) {
+      const im = ev.img, sc = Math.min(380 / im.width, 380 / im.height), w = im.width * sc, h = im.height * sc, cx = MW / 2, cy = MH * 0.42;
+      x.save(); x.globalAlpha = S.photoA; x.translate(cx, cy + (1 - S.photoA) * 40); x.rotate(-0.04); x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 24; x.fillStyle = '#fff'; x.fillRect(-w / 2 - 14, -h / 2 - 14, w + 28, h + 60); x.shadowBlur = 0; x.drawImage(im, -w / 2, -h / 2, w, h); x.fillStyle = '#223a6b'; x.font = '800 22px sans-serif'; x.textAlign = 'center'; x.fillText('📸 フォトポイント', 0, h / 2 + 38);
+      x.fillStyle = '#e8312a'; x.beginPath(); x.arc(w / 2 - 6, -h / 2 - 6, 46, 0, Math.PI * 2); x.fill(); x.fillStyle = '#fff'; x.font = '900 34px sans-serif'; x.fillText('+' + r1(ev.pts), w / 2 - 6, -h / 2 + 6); x.font = '800 18px sans-serif'; x.fillText('点', w / 2 - 6, -h / 2 + 28); x.restore();
+    } else if (ev.k !== 'photo') {
+      const icon = ev.k === 'ss' ? '🏁' : ev.k === 'yae' ? '🖐' : '📍', col = ev.k === 'yae' ? '#e0a100' : ev.k === 'ss' ? '#d63a3a' : '#1f8a4c';
+      x.save(); x.globalAlpha = S.photoA; x.translate(MW / 2, MH * 0.4 + (1 - S.photoA) * 30); x.shadowColor = 'rgba(0,0,0,.45)'; x.shadowBlur = 24; x.fillStyle = '#fff'; rr(x, -230, -110, 460, 220, 28); x.fill(); x.shadowBlur = 0;
+      x.textAlign = 'center'; x.font = '800 30px sans-serif'; x.fillStyle = '#223a6b'; let lb = icon + ' ' + (ev.label || ''); while (x.measureText(lb).width > 420 && x.font.indexOf('16px') < 0) { const m = /(\d+)px/.exec(x.font); x.font = '800 ' + (parseInt(m[1], 10) - 2) + 'px sans-serif'; } x.fillText(lb, 0, -40);
+      x.fillStyle = col; x.font = '900 88px sans-serif'; x.fillText('+' + r1(ev.pts), -20, 56); x.font = '800 32px sans-serif'; x.fillText('点', 128, 56); x.restore();
+    }
   }
   if (S.endA > 0) {
     x.save(); x.globalAlpha = S.endA * 0.55; x.fillStyle = '#000'; x.fillRect(0, 0, MW, MH); x.globalAlpha = S.endA; x.textAlign = 'center'; x.fillStyle = '#fff';
@@ -1080,7 +1093,10 @@ async function runMovie(record) {
   if (mov) return; const d = $('movDay').value; if (!d) return;
   const tr = prepTrack(trkLoad(d), $('movTrim').checked); if (!tr) { movMsg('軌跡が短すぎて、ムービーにできません（約300m以上走ってください）。'); return; }
   const pts = tr.pts, n = pts.length;
-  const photos = (lsGet(PMK + d) || []).map(m => { let bi = -1, bd = 1e9; pts.forEach((q, i) => { const dd = dist(q[0], q[1], m.lat, m.lon); if (dd < bd) { bd = dd; bi = i; } }); return bd <= 300 ? { i: bi, src: m.img, img: null } : null; }).filter(Boolean).sort((a, b) => a.i - b.i);
+  const raw = trkLoad(d), near = m => raw.some(q => dist(q[0], q[1], m.lat, m.lon) <= 300);
+  const evs = (lsGet(PMK + d) || []).map(m => ({ k: 'photo', pts: m.pts != null ? m.pts : PT, src: m.img, img: null, lat: m.lat, lon: m.lon, t: m.t })).concat((lsGet(EVK + d) || []).map(m => ({ k: m.k, label: m.label, pts: m.pts, lat: m.lat, lon: m.lon, t: m.t })))
+    .map(m => { if (!near(m)) return null; let bi = -1, bd = 1e9; pts.forEach((q, i) => { const dd = dist(q[0], q[1], m.lat, m.lon); if (dd < bd) { bd = dd; bi = i; } }); m.i = bi; return m; }).filter(Boolean).sort((a, b) => a.i - b.i || a.t - b.t);
+  const photos = evs;
   const cv = $('movCv'), cx = cv.getContext('2d'); cv.width = MW; cv.height = MH; cv.classList.remove('hide');
   const S = { mapCv: null, dateTxt: d.slice(5).replace('-', '月') + '日', nick: nickVal() || 'ライダー', veh: ($('veh').value || '').trim(), km: 0, kmTotal: tr.len / 1000, pts: (d === day.d ? total() : null), prog: 0, photo: null, photoA: 0, endA: 0 };
   mov = { stop: false }; $('movPlay').disabled = $('movRec').disabled = true; $('movStop').classList.remove('hide'); $('movOut').classList.add('hide'); movBlob = null;
@@ -1088,7 +1104,7 @@ async function runMovie(record) {
   const cleanup = () => { try { if (map) map.remove(); } catch (e) { /* noop */ } const b = $('movMapBox'); if (b) b.remove(); mov = null; $('movStop').classList.add('hide'); movRefresh(d); };
   try {
     movMsg('地図を読み込んでいます…（通信状況により、少し時間がかかります）');
-    await loadMapbox(); await Promise.all(photos.map(p => new Promise(r => { const im = new Image(); im.onload = () => { p.img = im; r(); }; im.onerror = r; im.src = p.src; })));
+    await loadMapbox(); await Promise.all(photos.filter(p => p.src).map(p => new Promise(r => { const im = new Image(); im.onload = () => { p.img = im; r(); }; im.onerror = r; im.src = p.src; })));
     const box = document.createElement('div'); box.id = 'movMapBox'; box.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + MW + 'px;height:' + MH + 'px;pointer-events:none'; document.body.appendChild(box);
     const zRun = tr.total < 20000 ? 14.8 : tr.total < 80000 ? 14 : 13.2;
     mapboxgl.accessToken = MB_TOKEN;
@@ -1115,7 +1131,7 @@ async function runMovie(record) {
         if (phase === 'intro') { const e = ease((ts - ph0) / 1500); zoom = zRun - 3 + 3 * e; pitch = 40 + 22 * e; if (e >= 1) phase = 'run'; }
         else if (phase === 'run') {
           if (hold > 0) { hold -= dt; const el = holdAll - hold; S.photoA = Math.min(1, el / 0.35, hold / 0.35 + 0.0001); if (hold <= 0) { S.photo = null; S.photoA = 0; } }
-          else { pos += speed * dt; if (pi < photos.length && pos >= photos[pi].i) { pos = photos[pi].i; S.photo = photos[pi]; hold = holdAll = 2.4; pi++; } }
+          else { pos += speed * dt; if (pi < photos.length && pos >= photos[pi].i) { pos = photos[pi].i; S.photo = photos[pi]; hold = holdAll = photos[pi].k === 'photo' ? 2.4 : 1.8; pi++; } }
           if (pos >= n - 1) { pos = n - 1; phase = 'end'; ph0 = ts; S.photo = null; S.photoA = 0; }
         }
         if (phase === 'end') { const e = ease((ts - ph0) / 2500); zoom = zRun - 1.8 * e; pitch = 62 - 20 * e; S.endA = ease((ts - ph0 - 600) / 1200); if (ts - ph0 > 4200) { done(); return; } }
