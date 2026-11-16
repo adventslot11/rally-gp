@@ -671,7 +671,7 @@ $('finBtn').onclick = () => {
   if (!day.goal || day.fin) return; day.complete = allDone(); day.fin = true; day.yaeOpen = null; saveDay(); renderAll();
   const lines = []; regs('ss').forEach(i => lines.push('SS' + (i + 1) + '　' + (day.ss[i] ? day.ss[i].pts : 0) + '点'));
   const v = day.view.filter(Boolean).length, h = day.historic.filter(Boolean).length, y = day.yae.reduce((s, n) => s + Math.min(n, YAE_MAX), 0);
-  if (nReg('view')) lines.push('フォトポイント ' + v + '箇所　' + v * PT + '点'); if (nReg('historic')) lines.push('チェックポイント ' + h + '箇所　' + h * PT + '点'); lines.push('ヤエー ' + y + '回　' + y * YAE_PT + '点');
+  if (nReg('view')) lines.push('フォトポイント ' + v + '箇所　' + v * PT + '点'); if (nReg('historic')) lines.push('チェックポイント ' + h + '箇所　' + h * PT + '点'); lines.push('ヤエー（ボーナスポイント） ' + y + '回　' + y * YAE_PT + '点');
   pop(day.complete ? '🎉 完走！おめでとうございます' : '🏁 ゴールしました', total(), lines.join('\n') + (day.complete ? '' : '\n\n※ のこりのポイントがあるため、完走証明は発行されません\n（のこり：' + remainTxt() + '）'), true, true, target(), day.complete);
 };
 function renderAll() { if (typeof scheduleScore === 'function') scheduleScore(); renderPace(); renderPhoto(); renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
@@ -1116,7 +1116,7 @@ async function runMovie(record) {
   const evs = (lsGet(PMK + d) || []).map(m => ({ k: 'photo', pts: m.pts != null ? m.pts : PT, src: m.img, img: null, lat: m.lat, lon: m.lon, t: m.t })).concat((lsGet(EVK + d) || []).map(m => ({ k: m.k, label: m.label, pts: m.pts, lat: m.lat, lon: m.lon, t: m.t })))
     .map(m => { if (!near(m)) return null; let bi = -1, bd = 1e9; pts.forEach((q, i) => { const dd = dist(q[0], q[1], m.lat, m.lon); if (dd < bd) { bd = dd; bi = i; } }); m.i = bi; return m; }).filter(Boolean).sort((a, b) => a.i - b.i || a.t - b.t);
   const photos = evs;
-  const cv = $('movCv'), cx = cv.getContext('2d'); cv.width = MW; cv.height = MH; cv.classList.remove('hide');
+  const cv = $('movCv'), cx = cv.getContext('2d'); cv.width = MW; cv.height = MH; cv.classList.remove('hide'); setTimeout(() => { try { cv.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 150);
   const S = { mapCv: null, dateTxt: d.slice(5).replace('-', '月') + '日', nick: nickVal() || 'ライダー', veh: ($('veh').value || '').trim(), km: 0, kmTotal: tr.len / 1000, pts: (d === day.d ? total() : null), prog: 0, photo: null, photoA: 0, endA: 0 };
   mov = { stop: false }; $('movPlay').disabled = $('movRec').disabled = true; $('movStop').classList.remove('hide'); $('movOut').classList.add('hide'); movBlob = null;
   let map = null, rec = null, chunks = [], mime = '';
@@ -1165,7 +1165,7 @@ async function runMovie(record) {
     if (rec) {
       await new Promise(r => { rec.onstop = r; try { rec.stop(); } catch (e) { r(); } });
       const base = (rec.mimeType || mime).split(';')[0]; movBlob = new Blob(chunks, { type: base }); movName = 'rally-gp_' + d.replace(/-/g, '') + (base.indexOf('mp4') >= 0 ? '.mp4' : '.webm');
-      if (movBlob.size > 1000) { const v = $('movVid'); try { URL.revokeObjectURL(v.src); } catch (e) { /* noop */ } v.src = URL.createObjectURL(movBlob); $('movOut').classList.remove('hide'); $('movCv').classList.add('hide'); movMsg('✅ できました！ 下の「共有・保存」を押してください。'); } else movMsg('動画を作れませんでした。もう一度お試しください。');
+      if (movBlob.size > 1000) { const v = $('movVid'); try { URL.revokeObjectURL(v.src); } catch (e) { /* noop */ } v.src = URL.createObjectURL(movBlob); $('movOut').classList.remove('hide'); $('movCv').classList.add('hide'); setTimeout(() => { try { $('movOut').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* noop */ } }, 150); movMsg('✅ できました！ 下の「共有・保存」を押してください。'); } else movMsg('動画を作れませんでした。もう一度お試しください。');
     } else movMsg(mov && mov.stop ? '停止しました。' : 'プレビューが終わりました。');
   } catch (e) {
     movMsg(e && e.message === 'auth' ? '地図を表示できませんでした（認証エラー）。' : '地図を読み込めませんでした。電波のよい所で、もう一度お試しください。');
