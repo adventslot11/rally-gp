@@ -481,7 +481,16 @@ const pin = (c, t) => L.divIcon({ className: '', html: pinHtml(c, t), iconSize: 
 function initMap() {
   if (map || typeof L === 'undefined') return;
   map = L.map('map').setView([37.4, 140.4], 8);
-  L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=' + MB_TOKEN, { tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+  const baseMb = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=' + MB_TOKEN, { tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' });
+  const gsiAttr = '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>';
+  const baseGsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxNativeZoom: 18, maxZoom: 19, attribution: gsiAttr });
+  const baseGsiPhoto = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { maxNativeZoom: 18, maxZoom: 19, attribution: gsiAttr });
+  const baseMaps = { 'Mapbox（標準）': baseMb, '国土地理院（日本語）': baseGsi, '国土地理院（航空写真）': baseGsiPhoto };
+  let baseKey = 'Mapbox（標準）';
+  try { const sv = localStorage.getItem('gp_basemap'); if (sv && baseMaps[sv]) baseKey = sv; } catch (e) {}
+  baseMaps[baseKey].addTo(map);
+  L.control.layers(baseMaps, null, { position: 'topright', collapsed: true }).addTo(map);
+  map.on('baselayerchange', ev => { try { localStorage.setItem('gp_basemap', ev.name); } catch (e) {} });
   layer = L.layerGroup().addTo(map);
   map.on('click', e => { if (tapMode) onTap(e.latlng.lat, e.latlng.lng); });
 }
