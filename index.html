@@ -84,6 +84,9 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
 .gal img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#dde4f0}.gal figcaption{padding:4px 6px;font-size:12px;color:var(--m)}
 .gal .bt{display:flex;gap:4px;padding:0 6px 6px}.gal .bt button{flex:1;min-height:34px;font-size:12px;border:2px solid #223a6b;border-radius:8px;background:#fff;font-weight:800;color:#223a6b}
 .ov .box .btn{width:100%;margin-top:8px}.ov img.prev{max-width:100%;max-height:36vh;border-radius:12px;border:2px solid #223a6b}
+body.ended #missionCard,body.ended #mapCard,body.ended #goCard,body.ended #photoCard,body.ended #yaeCard,body.ended #runCard{filter:grayscale(1);opacity:.5;pointer-events:none;user-select:none}
+#tapBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}#tapBar.hide{display:none}#tapBar .tt{flex:1 1 100%}#tapBar button{min-height:40px;font-size:14px;padding:0 12px}
+#rankCard>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:20px;font-weight:900;margin:0}#rankCard>summary::-webkit-details-marker{display:none}#rankCard>summary::after{content:'▼ たたむ';font-size:13px;font-weight:700;color:#5a6272}#rankCard:not([open])>summary::after{content:'▶ ひらく'}
 </style></head><body>
 <header><img src="icon-64.png" alt="" width="34" height="34" style="border-radius:8px;background:#fff"><b>Rally GP</b><span class="tag">ソロ</span><span id="hPlan" class="tag" style="margin-left:auto"></span></header>
 <div id="toast"></div>
@@ -94,8 +97,10 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
     <div class="bar"><i id="barFill"></i></div>
   </div>
 
-  <div class="card">
-    <h2>🎯 ミッション</h2>
+  <div id="nextCard" class="card hide" style="border:2px solid var(--g);text-align:center"><h2>🏁 ミッション終了</h2><div id="nextHint" class="muted" style="margin-bottom:8px">おつかれさまでした！ 結果は、いつでも見られます。</div><button id="resultBtn" class="btn" type="button" style="width:100%;margin-bottom:8px">📋 ゴールの結果を見る</button><button id="nextBtn" class="btn g" type="button" style="width:100%;min-height:56px;font-size:18px">▶ 次のミッションを開始する</button><div class="muted" style="margin-top:8px;font-size:12px">開始するまで、地図とミッションはグレーのままです。ランキングには、その日の「いちばん高い得点」が使われます。</div></div>
+
+  <div id="missionCard" class="card">
+    <h2>🎯 ミッション <button id="missReset" class="btn hide" type="button" style="float:right;min-height:34px;font-size:13px;padding:0 10px">↺ やり直す</button></h2>
     <div class="strip" id="strip"></div>
   </div>
 
@@ -132,7 +137,7 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
     </details>
   </div>
 
-  <div class="card">
+  <div id="mapCard" class="card">
     <div id="tapBar" class="hide"></div>
     <div style="display:flex;gap:8px;margin-bottom:8px"><button id="loc" class="btn" style="flex:1">📍 現在地へ</button><button id="fit" class="btn" style="flex:1">全体を見る</button></div>
     <div id="map"></div>
@@ -150,22 +155,16 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
 
   <div id="resCard" class="card hide"><h2>🏆 今日の結果</h2><div id="res"></div></div>
 
-  <div id="rankCard" class="card">
-    <h2>🏆 月間ランキング</h2>
-    <div class="muted"><b>その月の1日〜末日の「合計点」</b>で順位が決まります（毎日の得点が、合計に足されていきます）。月が変わると、新しいランキングになります。</div>
+  <details id="rankCard" class="card" open>
+    <summary>🏆 月間ランキング</summary>
+    <div class="muted" style="margin-top:6px"><b>その月の1日〜末日の「合計点」</b>で順位が決まります（毎日の得点が、合計に足されていきます）。月が変わると、新しいランキングになります。</div>
     <div class="tabs"><button id="rkThis" class="btn on" type="button">今月</button><button id="rkLast" class="btn" type="button">先月</button></div>
     <div id="rkMy" class="muted" style="margin-bottom:6px"></div>
     <div id="rkSync" class="muted" style="margin-bottom:6px;font-size:12px"></div>
     <div id="rkList"></div>
-    <div id="rkNickBox" class="hide" style="margin-top:10px;border-top:2px dashed var(--line);padding-top:10px">
-      <label class="muted" for="rkNick">ランキングに出るニックネーム（20文字まで）</label>
-      <div style="display:flex;gap:8px;margin-top:4px"><input id="rkNick" maxlength="20" placeholder="例：くに" style="flex:1;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px"><button id="rkNickSave" class="btn g" type="button" style="min-height:46px">保存</button></div>
-      <label class="muted" for="rkVeh" style="display:block;margin-top:8px">ランキングに出る車両名（30文字まで・空欄でもOK）</label>
-      <input id="rkVeh" maxlength="30" placeholder="例：CB400SF" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin-top:4px">
-      <div id="rkNickMsg" class="muted"></div>
-    </div>
+    <div id="rkWho" class="muted hide" style="margin-top:10px;border-top:2px dashed var(--line);padding-top:10px;font-size:13px"></div>
     <div id="rkLogin" class="muted hide" style="margin-top:8px">ログインすると、ランキングに参加できます（下の「アカウント」から）。</div>
-  </div>
+  </details>
 
   <details id="galCard" class="card">
     <summary style="cursor:pointer;font-weight:900;font-size:19px;color:#223a6b">📸 フォトギャラリー</summary>
@@ -181,7 +180,7 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
     <select id="movDay" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px;margin-top:4px;background:#fff"></select>
     <label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:14px"><input id="movTrim" type="checkbox" checked style="margin-top:4px">出発・到着の付近（約300m）を隠す（自宅の場所が分からないように）</label>
     <div id="movInfo" class="muted" style="margin-top:6px"></div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button id="movPlay" class="btn" type="button" style="flex:1">▶ プレビュー</button><button id="movRec" class="btn g" type="button" style="flex:1">🎬 動画を作る</button></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button id="movPlay" class="btn" type="button" style="flex:1">▶ プレビュー</button><button id="movRec" class="btn g" type="button" style="flex:1">⬇ 動画をダウンロード</button></div>
     <button id="movStop" class="btn r hide" type="button" style="width:100%;margin-top:8px">■ 中止する</button>
     <div id="movMsg" class="muted" style="margin-top:8px"></div>
     <canvas id="movCv" class="hide" style="display:block;width:100%;max-width:320px;margin:10px auto 0;border-radius:14px;background:#233;aspect-ratio:9/16"></canvas>
@@ -224,7 +223,7 @@ try {
   else { const o = JSON.parse(localStorage.getItem('sampleTT_course') || 'null'); if (o) { ['ss', 'view', 'historic'].forEach(k => { if (o[k]) course[k][0] = o[k]; }); course.goal = o.goal || null; } }
 } catch (e) { /* noop */ }
 const saveCourse = () => { try { localStorage.setItem('sampleTT_course3', JSON.stringify(course)); } catch (e) { /* noop */ } };
-const newDay = () => ({ d: today(), ss: blank3(), view: [false, false, false], historic: [false, false, false], goal: false, fin: false, yae: [0, 0, 0], yaeOpen: null });
+const newDay = () => ({ d: today(), ss: blank3(), view: [false, false, false], historic: [false, false, false], goal: false, fin: false, yae: [0, 0, 0], yaeOpen: null, bestPrev: 0 });
 let day = null;
 function loadDay() { let d = null; try { d = JSON.parse(localStorage.getItem('sampleTT_day3') || 'null'); } catch (e) { d = null; } if (!d || d.d !== today() || !Array.isArray(d.ss)) d = newDay(); day = d; saveDay(); }
 const saveDay = () => { try { localStorage.setItem('sampleTT_day3', JSON.stringify(day)); } catch (e) { /* noop */ } };
@@ -550,27 +549,42 @@ let noAutoScrollUntil = 0;
 function scrollToMission() { noAutoScrollUntil = Date.now() + 4000; const go = () => { try { const g = $('goCard'); (g && !g.classList.contains('hide') ? g : $('map')).scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* noop */ } }; setTimeout(go, 80); setTimeout(go, 600); }
 
 /* ---------- コース登録（地図をタップ） ---------- */
-$('setupBtn').onclick = () => { setupOpen = !(setupOpen || !!tapMode); if (tapMode) { tapMode = null; tmpA = null; bar(''); } renderAll(); };
-function bar(t) { const d = $('tapBar'); d.textContent = t || ''; d.classList.toggle('hide', !t); }
+$('setupBtn').onclick = () => { if (day && day.fin) { toast('ミッション終了後は、コースを変えられません。「次のミッションを開始する」を押してください。'); return; } if (tapMode) { cancelTap(); setupOpen = false; renderAll(); return; } setupOpen = !setupOpen; renderAll(); };
+function bar(t) { const d = $('tapBar'); if (tapMode) { tapBarRender(); return; } d.textContent = t || ''; d.classList.toggle('hide', !t); }
+let tapPrev = null;
+function tapBarRender() {
+  const d = $('tapBar'); if (!tapMode) { d.innerHTML = ''; d.classList.add('hide'); return; }
+  const k = tapMode, t = k === 'ss' ? (tmpA ? '👆 次は、SS' + (tapIdx + 1) + 'のゴール地点「B」をタップしてください' : '👆 地図をタップして、SS' + (tapIdx + 1) + 'のスタート地点「A」を選んでください') : '👆 地図をタップして、' + LAB[k] + (k === 'goal' ? '' : (tapIdx + 1)) + 'の場所を選んでください';
+  d.innerHTML = '<div class="tt"></div>' + (k === 'ss' && tmpA ? '<button type="button" class="btn" id="tapRedoA">↩ A地点を選び直す</button>' : '') + '<button type="button" class="btn r" id="tapCancel">✕ キャンセル</button>';
+  d.firstChild.textContent = t; d.classList.remove('hide');
+  const ra = $('tapRedoA'); if (ra) ra.onclick = () => { tmpA = null; tapBarRender(); drawMap(); };
+  $('tapCancel').onclick = cancelTap;
+}
+function cancelTap() {
+  if (!tapMode) return; const p = tapPrev; tapMode = null; tmpA = null;
+  if (p) { if (p.k === 'goal') course.goal = p.v; else course[p.k][p.i] = p.v; saveCourse(); }
+  tapPrev = null; bar(''); fitted = false; renderAll(); toast('登録をキャンセルしました（元の内容に戻しました）');
+}
 function beginTap(k, i) {
-  if (!map) return; tapMode = k; tapIdx = i || 0; tmpA = null; focus = null; if (k === 'goal') course.goal = null; else course[k][tapIdx] = null;
-  bar(k === 'ss' ? '👆 地図をタップして、SS' + (tapIdx + 1) + 'のスタート地点「A」を選んでください' : '👆 地図をタップして、' + LAB[k] + (k === 'goal' ? '' : (tapIdx + 1)) + 'の場所を選んでください');
+  if (!map) return; tapPrev = { k, i: i || 0, v: k === 'goal' ? course.goal : course[k][i || 0] };
+  tapMode = k; tapIdx = i || 0; tmpA = null; focus = null; if (k === 'goal') course.goal = null; else course[k][tapIdx] = null;
+  tapBarRender();
   if (fix && !fitted) map.setView([fix.lat, fix.lon], 14);
   $('map').scrollIntoView({ behavior: 'smooth', block: 'center' }); renderAll();
 }
 async function onTap(lat, lon) {
   const k = tapMode, idx = tapIdx;
   if (k === 'ss') {
-    if (!tmpA) { tmpA = [lat, lon]; bar('👆 次は、SS' + (idx + 1) + 'のゴール地点「B」をタップしてください'); drawMap(); return; }
-    const a = tmpA, b = [lat, lon]; tapMode = null; tmpA = null; bar('道のりを計算しています…');
+    if (!tmpA) { tmpA = [lat, lon]; tapBarRender(); drawMap(); return; }
+    const a = tmpA, b = [lat, lon]; tapMode = null; tmpA = null; tapPrev = null; bar('道のりを計算しています…');
     let d = dist(a[0], a[1], b[0], b[1]) * 1.3, sec = d / (FALLBACK_KMH / 3.6), line = null;
     try {
       const r = await fetch('https://api.mapbox.com/directions/v5/mapbox/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson&access_token=' + MB_TOKEN); const j = await r.json();
       if (j.routes && j.routes[0]) { d = j.routes[0].distance; sec = j.routes[0].duration; line = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); }
     } catch (e) { /* 通信できないときは、直線×1.3と時速40kmで計算 */ }
     course.ss[idx] = { a, b, dist: d, sec: Math.max(30, Math.round(sec)), line }; saveCourse(); bar(''); toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(d) + '／設定タイム ' + fmtS(setSec(course.ss[idx])));
-  } else if (k === 'goal') { course.goal = [lat, lon]; tapMode = null; saveCourse(); bar(''); toast('✅ ゴールを登録しました'); }
-  else if (k) { course[k][idx] = [lat, lon]; tapMode = null; saveCourse(); bar(''); toast('✅ ' + LAB[k] + (idx + 1) + 'を登録しました'); }
+  } else if (k === 'goal') { course.goal = [lat, lon]; tapMode = null; tapPrev = null; saveCourse(); bar(''); toast('✅ ゴールを登録しました'); }
+  else if (k) { course[k][idx] = [lat, lon]; tapMode = null; tapPrev = null; saveCourse(); bar(''); toast('✅ ' + LAB[k] + (idx + 1) + 'を登録しました'); }
   fitted = false; renderAll();
 }
 const btnS = 'style="min-height:40px;font-size:14px;padding:0 10px"';
@@ -621,7 +635,7 @@ function renderStrip() {
   $('strip').innerHTML = h;
   $('strip').querySelectorAll('.m').forEach(b => b.onclick = () => {
     const k = b.dataset.k, i = +b.dataset.i, has = k === 'goal' ? course.goal : course[k][i];
-    focus = { k, i }; if (k === 'ss') selSS = i; renderStrip(); renderGo(); drawMap(); showFocus(true);
+    if (day.fin) return; focus = { k, i }; if (k === 'ss') selSS = i; renderStrip(); renderGo(); drawMap(); showFocus(true);
   });
 }
 function renderRes() {
@@ -676,14 +690,36 @@ function renderFin() {
   $('finHint').textContent = day.fin ? (day.complete ? '🎉 完走しました！' : '🏁 ゴールしました（すべてのポイントを取っていないので、完走ではありません）') : (day.goal ? '「ゴール」ボタンを押すと終了します。' + (allDone() ? '（すべてのポイントを取ったので、完走になります）' : '（のこりポイント：' + remainTxt() + ' → 残っていると完走になりません）') : 'ゴール地点に着くとゴールできます。完走にするには、設定したポイントをすべて取ってください。のこり：' + remainTxt());
 }
 $('certBtn').onclick = showCertificate;
-$('finBtn').onclick = () => {
-  if (!day.goal || day.fin) return; day.complete = allDone(); day.fin = true; day.yaeOpen = null; saveDay(); renderAll();
+function goalPopup() {
   const lines = []; regs('ss').forEach(i => lines.push('SS' + (i + 1) + '　' + (day.ss[i] ? day.ss[i].pts : 0) + '点'));
   const v = day.view.filter(Boolean).length, h = day.historic.filter(Boolean).length, y = day.yae.reduce((s, n) => s + Math.min(n, YAE_MAX), 0);
   if (nReg('view')) lines.push('フォトポイント ' + v + '箇所　' + v * PT + '点'); if (nReg('historic')) lines.push('チェックポイント ' + h + '箇所　' + h * PT + '点'); lines.push('ヤエー（ボーナスポイント） ' + y + '回　' + y * YAE_PT + '点');
   pop(day.complete ? '🎉 完走！おめでとうございます' : '🏁 ゴールしました', total(), lines.join('\n') + (day.complete ? '' : '\n\n※ のこりのポイントがあるため、完走証明は発行されません\n（のこり：' + remainTxt() + '）'), true, true, target(), day.complete);
+}
+$('finBtn').onclick = () => {
+  if (!day.goal || day.fin) return; day.complete = allDone(); day.fin = true; day.yaeOpen = null; focus = null; saveDay(); try { winEnd(); } catch (e) { /* noop */ } renderAll();
+  goalPopup();
 };
-function renderAll() { if (typeof scheduleScore === 'function') scheduleScore(); renderPace(); renderPhoto(); renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
+$('resultBtn').onclick = () => { if (day.fin) goalPopup(); };
+function resetDayState(mode) {
+  const prevBest = mode === 'next' ? Math.max(day.bestPrev || 0, total()) : mode === 'keep' ? (day.bestPrev || 0) : 0;
+  day = newDay(); day.bestPrev = prevBest; saveDay(); run = null; clearInterval(tick); focus = null; nearA = null; $('runCard').classList.add('hide');
+}
+$('nextBtn').onclick = () => {
+  if (!day.fin) return;
+  if (!premium) { showUpsell('無料お試しは、1日1回の記録までです。次のミッションを始めるには、プレミアムが必要です。（明日になれば、また始められます）'); return; }
+  if (!confirm('次のミッションを開始します。今のミッションの結果は、この画面から消えます（ランキングには、その日のいちばん高い得点が使われます）。よろしいですか？')) return;
+  resetDayState('next'); winMark(true); lastSent = null; renderAll(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } toast('▶ 次のミッションを開始しました');
+};
+$('missReset').onclick = () => {
+  if (run) { toast('計測中は、リセットできません。先に「やめる」を押してください。'); return; }
+  const used = day.ss.some(Boolean) || day.view.some(Boolean) || day.historic.some(Boolean) || day.goal || day.fin;
+  if (!used) return;
+  if (!premium) { showUpsell('無料お試しは、1日1回の記録までです。今日の記録をやり直すには、プレミアムが必要です。'); return; }
+  if (!confirm('このミッションを、最初からやり直します（コースの登録は残ります）。よろしいですか？')) return;
+  resetDayState('keep'); try { localStorage.removeItem(WIN + day.d); } catch (e) { /* noop */ } renderAll();
+};
+function renderAll() { { const ended = !!(day && day.fin); document.body.classList.toggle('ended', ended); $('nextCard').classList.toggle('hide', !ended); const used = !!day && !ended && !run && (day.ss.some(Boolean) || day.view.some(Boolean) || day.historic.some(Boolean) || day.goal); $('missReset').classList.toggle('hide', !used); } if (typeof scheduleScore === 'function') scheduleScore(); renderPace(); renderPhoto(); renderFin(); renderSteps(); renderStrip(); renderGo(); renderRes(); renderYae(); drawMap(); }
 
 /* ---------- GPS・到着 ---------- */
 let wid = null, run = null, tick = null, goalWarn = 0, lastFixAt = 0, prevFix = null, spd = 0;
@@ -713,10 +749,10 @@ function onFix(c) {
   const v = calcSpeed(c); if (v !== null) { spd = spd * 0.2 + v * 0.8; if (run) updateMove(); }
   const fp = focusPos(); $('gpsmsg').textContent = '現在地を取得中（精度 約' + Math.round(c.accuracy) + 'm）' + (fp ? '　目標まで ' + fmtD(dist(fix.lat, fix.lon, fp[0], fp[1])) : '');
   if (me) me.setLatLng([fix.lat, fix.lon]); else if (map) me = L.circleMarker([fix.lat, fix.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1768c8', fillOpacity: 1 }).addTo(map);
-  if (map && focusWait && focus) showFocus(false);
+  if (map && focusWait && focus && !day.fin) showFocus(false);
   if (map && !centeredOnce && !fitted && !anyReg() && !course.goal && !tapMode) { centeredOnce = true; map.setView([fix.lat, fix.lon], 14); }
   if (c.accuracy <= ACC) {
-    ['historic'].forEach(k => regs(k).forEach(i => { if (!day[k][i] && !day.fin && dist(fix.lat, fix.lon, course[k][i][0], course[k][i][1]) <= NEAR) { day[k][i] = true; saveDay(); pop(LAB[k] + (i + 1) + ' 到着', PT); renderAll(); } }));
+    ['historic'].forEach(k => regs(k).forEach(i => { if (!day[k][i] && !day.fin && dist(fix.lat, fix.lon, course[k][i][0], course[k][i][1]) <= NEAR) { day[k][i] = true; saveDay(); winMark(false); pop(LAB[k] + (i + 1) + ' 到着', PT); renderAll(); } }));
     if (course.goal && !day.goal && !day.fin && !run && dist(fix.lat, fix.lon, course.goal[0], course.goal[1]) <= NEAR) {
       day.goal = true; saveDay();
       toast(allDone() ? '🏁 ゴール地点に到着！ 下の「ゴール」ボタンを押してください' : '🏁 ゴール地点に到着！ ゴールできます（のこりのポイントがあるので、完走にはなりません：' + remainTxt() + '）');
@@ -731,6 +767,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (run) { run.hideAt = Date.now(); run.accAtHide = run.acc; } }
   else if (run && run.hideAt) { const now = Date.now(); run.acc = Math.max(run.acc, run.accAtHide + (now - run.hideAt)); run.hideAt = null; run.last = now; runUi(); }
 });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && day && day.d !== today() && !run) { loadDay(); lastSent = null; focus = null; renderAll(); } });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (wid != null) { try { navigator.geolocation.clearWatch(wid); } catch (e) { /* noop */ } wid = null; } startWatch(); } });
 
 /* ---------- SS計測（走行中はスピードだけ表示。信号などで止まっている間は計測を止め、走り出すと再開） ---------- */
@@ -753,7 +790,7 @@ $('goBtn').onclick = () => {
   if (run || goIdx === null) return; const i = goIdx, s = course.ss[i]; if (!fix || Date.now() - lastFixAt > 15000) { toast('現在地を測っています。少し待ってからもう一度押してください。'); return; }
   if (fix.acc > ACC) { toast('GPSの精度が足りません（誤差 約' + Math.round(fix.acc) + 'm）。空の開けた場所で、少し待ってから押してください。'); return; }
   const from = dEnd(s, 'a') <= dEnd(s, 'b') ? 'a' : 'b', d = dEnd(s, from); if (d > START_NEAR) { toast('スタート地点（AかB）まで あと ' + fmtD(d) + '。近づいてから押してください。'); return; }
-  day.yaeOpen = null; noAutoScrollUntil = 0; saveDay(); spd = 0; run = newRun(i, from);
+  day.yaeOpen = null; noAutoScrollUntil = 0; saveDay(); winMark(false); spd = 0; run = newRun(i, from);
   $('runTitle').textContent = 'SS' + (i + 1); $('runCard').classList.remove('hide'); runUi();
   clearInterval(tick); tick = setInterval(runTick, 250);
   renderGo(); renderYae(); setTimeout(() => { try { $('runCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* noop */ } }, 150);
@@ -768,7 +805,7 @@ $('runCancel').onclick = () => { clearInterval(tick); run = null; focus = null; 
 $('reset').onclick = () => {
   const used = day.ss.some(Boolean) || day.view.some(Boolean) || day.historic.some(Boolean) || day.goal || day.fin;
   if (!premium && used) { showUpsell('無料お試しは、1日1回の記録までです。今日の記録をやり直すには、プレミアムが必要です。'); return; }
-  if (!confirm('今日の記録を消します（コースの登録は残ります）。よろしいですか？')) return; day = newDay(); saveDay(); run = null; clearInterval(tick); $('runCard').classList.add('hide'); renderAll(); };
+  if (!confirm('今日の記録を消します（コースの登録は残ります）。よろしいですか？')) return; day = newDay(); saveDay(); try { localStorage.removeItem(WIN + day.d); } catch (e) { /* noop */ } run = null; clearInterval(tick); focus = null; $('runCard').classList.add('hide'); renderAll(); };
 
 /* ---------- ヤエー（各SSの終了後に使えます。次のミッションを始めると使えなくなります） ---------- */
 let yAudio = null;
@@ -894,11 +931,11 @@ async function syncNick(msgEl) {
 function scheduleScore() {
   if (!sb || !user) return; clearTimeout(scoreT);
   scoreT = setTimeout(async () => {
-    const t = total(), key = day.d + ':' + t; if (key === lastSent) return;
+    const t = Math.max(total(), day.bestPrev || 0), key = day.d + ':' + t; if (key === lastSent) return;
     if (t === 0 && lastSent === null) return;
     const st = $('rkSync'), hm = () => new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     try { const { error } = await sb.rpc('gp_submit_day', { p_day: day.d, p_total: t, p_detail: { fin: !!day.fin, complete: !!day.complete } });
-      if (!error) { lastSent = key; if (st) st.textContent = '今日の得点 ' + r1(t) + ' 点を送りました（' + hm() + '）'; loadRank(); }
+      if (!error) { lastSent = key; if (st) st.textContent = '今日の得点 ' + r1(t) + ' 点を送りました（' + hm() + '）' + (day.bestPrev && day.bestPrev > total() ? '　※前のミッションの得点の方が高いので、そちらが使われます' : ''); loadRank(); }
       else { if (st) st.textContent = '得点を送れませんでした：' + (error.message || '不明なエラー'); clearTimeout(scoreRetry); scoreRetry = setTimeout(scheduleScore, 15000); } }
     catch (e) { if (st) st.textContent = '得点を送れませんでした（通信エラー）'; clearTimeout(scoreRetry); scoreRetry = setTimeout(scheduleScore, 15000); }
   }, 1500);
@@ -909,17 +946,16 @@ async function loadRank() {
   let rows = []; try { const { data, error } = await sb.rpc('gp_monthly_ranking', { p_month: ym }); if (!error && data) rows = data; } catch (e) { /* noop */ }
   $('rkThis').classList.toggle('on', rkMonth === 'this'); $('rkLast').classList.toggle('on', rkMonth !== 'this');
   const me = rows.find(r => r.is_me);
-  $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（今月の合計 ' + r1(Number(me.points)) + ' 点）' : (user ? (nickVal() ? 'まだ得点がありません' : '下の欄にニックネームを入れて「保存」を押すと、ランキングに載ります') : ''));
+  $('rkMy').textContent = ym.replace('-', '年') + '月　' + (me ? 'あなたは ' + me.pos + ' 位（今月の合計 ' + r1(Number(me.points)) + ' 点）' : (user ? (nickVal() ? 'まだ得点がありません' : '「コースをつくる・変える」でニックネームを入れると、ランキングに載ります') : ''));
   box.innerHTML = rows.length ? rows.slice(0, 30).map(r => '<div class="rk' + (r.is_me ? ' me' : '') + '"><div class="pos' + (r.pos == 1 ? ' p1' : '') + '">' + (r.pos == 1 ? '👑' : r.pos) + '</div><div class="nm">' + esc(r.nickname) + (r.vehicle ? '<small>🏍 ' + esc(r.vehicle) + '</small>' : '') + '</div><div class="pt">' + r1(Number(r.points)) + ' 点<small>' + (r.days ? r.days + '日分の合計' : '合計') + '</small></div></div>').join('') : '<div class="muted" style="padding:8px 0">まだ、ランキングに参加した人がいません。</div>';
-  $('rkNickBox').classList.toggle('hide', !user); $('rkLogin').classList.toggle('hide', !!user);
-  if (user && !$('rkNick').value) $('rkNick').value = nickVal();
-  if (user && !$('rkVeh').value) $('rkVeh').value = ($('veh').value || '').trim();
+  $('rkLogin').classList.toggle('hide', !!user); { const w = $('rkWho'); w.classList.toggle('hide', !user); w.textContent = '表示名：' + (nickVal() || '（未設定）') + (($('veh').value || '').trim() ? '　車両：' + ($('veh').value || '').trim() : '') + '　※「コースをつくる・変える」で入力した内容が使われます。変えるときは、そこで直してください。'; }
 }
+try { if (localStorage.getItem('gp_rank_open') === '0') $('rankCard').open = false; } catch (e) { /* noop */ }
+$('rankCard').addEventListener('toggle', () => { try { localStorage.setItem('gp_rank_open', $('rankCard').open ? '1' : '0'); } catch (e) { /* noop */ } });
 $('rkThis').onclick = () => { rkMonth = 'this'; loadRank(); };
 $('rkLast').onclick = () => { rkMonth = 'last'; loadRank(); };
-$('rkNickSave').onclick = async () => { $('nick').value = $('rkNick').value; $('veh').value = $('rkVeh').value; saveProf(); if (await syncNick($('rkNickMsg'))) { lastSent = null; scheduleScore(); loadRank(); } };
-$('veh').addEventListener('input', () => { $('rkVeh').value = $('veh').value; clearTimeout($('veh')._t); $('veh')._t = setTimeout(() => { if (user) syncNick(null); }, 1200); });
-$('nick').addEventListener('input', () => { $('rkNick').value = $('nick').value; clearTimeout($('nick')._t); $('nick')._t = setTimeout(() => { if (user) syncNick(null); }, 1200); });
+$('veh').addEventListener('input', () => { clearTimeout($('veh')._t); $('veh')._t = setTimeout(() => { if (user) syncNick(null); }, 1200); });
+$('nick').addEventListener('input', () => { clearTimeout($('nick')._t); $('nick')._t = setTimeout(() => { if (user) syncNick(null); }, 1200); });
 
 /* 写真：縮小 → 公開／非公開を選ぶ → 保存 → 5点 */
 async function shrink(file) {
@@ -938,7 +974,7 @@ function askVisibility(blob) {
     document.body.appendChild(el);
   });
 }
-function givePhotoPoints(i, file) { if (file) addPMark(file).catch(() => {}); day.view[i] = true; saveDay(); pop('フォトポイント' + (i + 1) + ' 撮影', PT, '写真をゲット！'); renderAll(); }
+function givePhotoPoints(i, file) { if (file) addPMark(file).catch(() => {}); day.view[i] = true; saveDay(); winMark(false); pop('フォトポイント' + (i + 1) + ' 撮影', PT, '写真をゲット！'); renderAll(); }
 async function handlePhoto(file, i) {
   if (!sb || !user) { givePhotoPoints(i, file); toast('📸 ログインすると、写真を保存して、ランキングにも参加できます'); return; }
   const blob = await shrink(file); if (blob.size > 5 * 1024 * 1024) { toast('写真が大きすぎます。もう一度撮ってください。'); return; }
@@ -991,19 +1027,23 @@ async function loadGallery() {
 $('gaPub').onclick = () => { galTab = 'pub'; loadGallery(); };
 $('gaMine').onclick = () => { galTab = 'mine'; loadGallery(); };
 $('galCard').addEventListener('toggle', () => { if ($('galCard').open) loadGallery(); });
-if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && !nickVal()) { try { const { data } = await sb.from('gp_profiles').select('nickname,vehicle').eq('user_id', session.user.id).maybeSingle(); if (data && data.nickname) { $('nick').value = data.nickname; if (data.vehicle && !$('veh').value) { $('veh').value = data.vehicle; if ($('rkVeh')) $('rkVeh').value = data.vehicle; } saveProf(); if ($('rkNick')) $('rkNick').value = data.nickname; } } catch (e) { /* noop */ } } if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
+if (sb) sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => { nickOk = false; lastSent = null; if (session && !nickVal()) { try { const { data } = await sb.from('gp_profiles').select('nickname,vehicle').eq('user_id', session.user.id).maybeSingle(); if (data && data.nickname) { $('nick').value = data.nickname; if (data.vehicle && !$('veh').value) { $('veh').value = data.vehicle; } saveProf(); } } catch (e) { /* noop */ } } if (session && nickVal()) await syncNick(null); loadRank(); scheduleScore(); if ($('galCard').open) loadGallery(); }, 300); });
 
 /* ---------- 走行ムービー（端末の中だけで作る） ---------- */
-const TRK = 'gp_trk_', PMK = 'gp_pm_', EVK = 'gp_ev_', MB_JS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js', MB_CSS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css';
+const TRK = 'gp_trk_', PMK = 'gp_pm_', EVK = 'gp_ev_', WIN = 'gp_win_', MB_JS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js', MB_CSS = 'https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css';
 const MW = 576, MH = 1024;
 const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 const trkLoad = d => { const a = lsGet(TRK + d); return Array.isArray(a) ? a : []; };
+/* ムービー用：その日のミッション開始〜ゴールボタンまでの軌跡だけを使う（開始・終了の記録がない日は、全体） */
+const trkSel = d => { const a = trkLoad(d), w = lsGet(WIN + d); if (!w || (!w.t0 && !w.t1)) return a; const b = a.filter(q => q[2] && (!w.t0 || q[2] >= w.t0) && (!w.t1 || q[2] <= w.t1)); return b.length >= 2 ? b : a; };
+function winMark(reset) { if (!day) return; const k = WIN + day.d; let w = lsGet(k); if (reset) w = { t0: Math.round(Date.now() / 1000) }; else if (!w || !w.t0) w = Object.assign({}, w || {}, { t0: Math.round(Date.now() / 1000) }); else return; lsSet(k, w); }
+function winEnd() { const k = WIN + day.d, w = lsGet(k) || {}; w.t1 = Math.round(Date.now() / 1000); lsSet(k, w); }
 let trkToday = null, mov = null, movBlob = null, movName = '', movPruned = false;
 function trkPrune() {
   try {
-    const ds = new Set(); for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && (k.indexOf(TRK) === 0 || k.indexOf(PMK) === 0 || k.indexOf(EVK) === 0)) ds.add(k.slice(-10)); }
-    const keep = [...ds].sort().reverse().slice(0, 7); [...ds].forEach(d => { if (keep.indexOf(d) < 0) { localStorage.removeItem(TRK + d); localStorage.removeItem(PMK + d); localStorage.removeItem(EVK + d); } });
+    const ds = new Set(); for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && (k.indexOf(TRK) === 0 || k.indexOf(PMK) === 0 || k.indexOf(EVK) === 0 || k.indexOf(WIN) === 0)) ds.add(k.slice(-10)); }
+    const keep = [...ds].sort().reverse().slice(0, 7); [...ds].forEach(d => { if (keep.indexOf(d) < 0) { localStorage.removeItem(TRK + d); localStorage.removeItem(PMK + d); localStorage.removeItem(EVK + d); localStorage.removeItem(WIN + d); } });
   } catch (e) { /* noop */ }
 }
 function trkFlush() {
@@ -1064,7 +1104,7 @@ function movDays() {
 }
 function movRefresh(sel) {
   trkFlush(); const ds = movDays(), cur = sel || $('movDay').value;
-  $('movDay').innerHTML = ds.map(d => { const t = prepTrack(trkLoad(d), false); return '<option value="' + d + '">' + d.slice(5).replace('-', '月') + '日（' + (t ? (t.total / 1000).toFixed(1) + ' km' : '短すぎます') + '）</option>'; }).join('');
+  $('movDay').innerHTML = ds.map(d => { const t = prepTrack(trkSel(d), false); return '<option value="' + d + '">' + d.slice(5).replace('-', '月') + '日（' + (t ? (t.total / 1000).toFixed(1) + ' km' : '短すぎます') + '）</option>'; }).join('');
   if (ds.indexOf(cur) >= 0) $('movDay').value = cur;
   $('movInfo').textContent = ds.length ? '' : 'まだ軌跡がありません。走るとき、アプリを開いたままにすると、位置が記録されます。（1日全体のログは、下の「GPXファイル」から取り込めます）';
   $('movPlay').disabled = $('movRec').disabled = !ds.length;
@@ -1119,9 +1159,9 @@ function drawOverlay(x, S) {
 }
 async function runMovie(record) {
   if (mov) return; const d = $('movDay').value; if (!d) return;
-  const tr = prepTrack(trkLoad(d), $('movTrim').checked); if (!tr) { movMsg('軌跡が短すぎて、ムービーにできません（約300m以上走ってください）。'); return; }
+  const tr = prepTrack(trkSel(d), $('movTrim').checked); if (!tr) { movMsg('軌跡が短すぎて、ムービーにできません（約300m以上走ってください）。'); return; }
   const pts = tr.pts, n = pts.length;
-  const raw = trkLoad(d), near = m => raw.some(q => dist(q[0], q[1], m.lat, m.lon) <= 300);
+  const raw = trkSel(d), near = m => raw.some(q => dist(q[0], q[1], m.lat, m.lon) <= 300);
   const evs = (lsGet(PMK + d) || []).map(m => ({ k: 'photo', pts: m.pts != null ? m.pts : PT, src: m.img, img: null, lat: m.lat, lon: m.lon, t: m.t })).concat((lsGet(EVK + d) || []).map(m => ({ k: m.k, label: m.label, pts: m.pts, lat: m.lat, lon: m.lon, t: m.t })))
     .map(m => { if (!near(m)) return null; let bi = -1, bd = 1e9; pts.forEach((q, i) => { const dd = dist(q[0], q[1], m.lat, m.lon); if (dd < bd) { bd = dd; bi = i; } }); m.i = bi; return m; }).filter(Boolean).sort((a, b) => a.i - b.i || a.t - b.t);
   const photos = evs;
