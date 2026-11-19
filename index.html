@@ -25,7 +25,7 @@ button{font:inherit}
 .step{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.step:first-of-type{border-top:0}
 .step .nm{flex:1;font-weight:800}.step .st{font-size:14px;color:var(--m);font-weight:700}.step .st.ok{color:var(--g)}
 @keyframes tl{0%,100%{box-shadow:0 0 0 0 #ff3b30aa}50%{box-shadow:0 0 0 6px #ff3b3000}}.m.run{animation:tl 1.2s ease-in-out infinite;outline:3px solid #ffd400;outline-offset:1px}.m.run .n{color:#fff200;font-weight:900}
-body.hasgo #map{height:38vh;min-height:220px}.runtop{display:flex;align-items:center;gap:8px}.runtop h2{margin:0;font-size:20px}.runtop .blink{flex:1;font-size:14px;margin:0}.runtop .btn{min-height:38px;padding:0 14px;font-size:14px;width:auto}.runrow{display:flex;align-items:center;gap:10px;margin-top:2px}.runrow .timer{font-size:40px;min-width:120px;text-align:left}.runside{flex:1;min-width:0}#runSet{font-size:15px;font-weight:800;color:#1f3a63}#runInfo{font-size:12px;text-align:left;line-height:1.35}.runnote{margin-top:4px}.runnote summary{font-size:12px;font-weight:700;color:#6b4a00;cursor:pointer}.runnote .muted{margin:6px 0 0!important}body.running #runCard{padding:8px 12px}body.running #map{height:calc(100svh - 300px);min-height:260px}#map{height:56vh;min-height:300px;border-radius:12px;overflow:hidden}
+body.hasgo #mapWrap{height:38vh;min-height:220px}.runtop{display:flex;align-items:center;gap:8px}.runtop h2{margin:0;font-size:20px}.runtop .blink{flex:1;font-size:14px;margin:0}.runtop .btn{min-height:38px;padding:0 14px;font-size:14px;width:auto}.runrow{display:flex;align-items:center;gap:10px;margin-top:2px}.runrow .timer{font-size:40px;min-width:120px;text-align:left}.runside{flex:1;min-width:0}#runSet{font-size:15px;font-weight:800;color:#1f3a63}#runInfo{font-size:12px;text-align:left;line-height:1.35}.runnote{margin-top:4px}.runnote summary{font-size:12px;font-weight:700;color:#6b4a00;cursor:pointer}.runnote .muted{margin:6px 0 0!important}body.running #runCard{padding:8px 12px}body.running #mapWrap{height:calc(100svh - 300px);min-height:260px}#mapWrap{position:relative;height:56vh;min-height:300px;border-radius:12px;overflow:hidden}#map{width:100%;height:100%;border-radius:12px}#mapWrap.hu #map{position:absolute;border-radius:0;will-change:transform}#mapWrap.hu .leaflet-control-container{display:none}#mapWrap.hu .leaflet-marker-icon>div{transform:rotate(var(--hdg,0deg));transform-origin:14px 34px}#huUi{display:none}#mapWrap.hu #huUi{display:block}#huN{position:absolute;left:8px;top:8px;width:34px;height:34px;border-radius:50%;background:#fffd;border:2px solid #1768c8;color:#c0392b;font-weight:900;font-size:14px;line-height:30px;text-align:center;z-index:900;pointer-events:none}.huZ{position:absolute;right:8px;width:44px;height:44px;border-radius:10px;border:2px solid #1768c8;background:#fffe;color:#1768c8;font-size:26px;font-weight:900;line-height:38px;z-index:900;padding:0}#huAttr{position:absolute;left:4px;bottom:2px;font-size:10px;color:#333;background:#fffa;padding:0 4px;border-radius:4px;z-index:900;pointer-events:none}
 #tapBar{position:sticky;top:0;z-index:900;background:#fff6dd;border:2px solid #e3ab2f;border-radius:12px;padding:10px 12px;font-weight:800;margin-bottom:10px}
 .hide{display:none!important}
 #toast{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:3000;background:var(--g);color:#fff;border-radius:16px;padding:16px;font-size:20px;font-weight:800;text-align:center;box-shadow:0 6px 20px #0008;display:none;line-height:1.5}
@@ -121,7 +121,7 @@ body.ended #missionCard,body.ended #mapCard,body.ended #goCard,body.ended #photo
 
   <div id="goCard" class="card hide">
     <h2 id="goTitle">SS</h2>
-    <div class="muted" style="margin:2px 0 8px;padding:6px 10px;border-radius:10px;background:#fff6dd;border:2px solid #e3ab2f;color:#6b4a00;line-height:1.5;font-size:13px">⚠️ 設定タイムは、AIが最短ルートをもとに決めた<b>参考タイム</b>です。必ずしも正確ではありません。SSの設定は高速道路を想定しておりません。<b>安全運転を心がけ、法定速度と交通ルールを守ってください。</b></div>
+    <div class="muted" style="margin:2px 0 8px;padding:6px 10px;border-radius:10px;background:#fff6dd;border:2px solid #e3ab2f;color:#6b4a00;line-height:1.5;font-size:13px">⚠️ 設定タイムは、AIが最短ルート（と、分かる範囲で道路の制限速度）をもとに決めた<b>参考タイム</b>です。必ずしも正確ではありません。SSの設定は高速道路を想定しておりません。<b>安全運転を心がけ、法定速度と交通ルールを守ってください。</b></div>
     <details style="margin:8px 0 0;padding:6px 10px;border-radius:10px;background:#eef4ff;border:2px solid #7aa2e3;color:#1f3a63;line-height:1.5;font-size:13px"><summary style="font-weight:800;cursor:pointer">📍 Googleマップを使うときのルール（タップで開く）</summary>SS計測中にGoogleマップなどを開いてもかまいません。その間も、時間は計測されます。ただし、次の点にご注意ください。<ul style="margin:4px 0 0 18px;padding:0"><li>Googleマップを使っている間は、信号待ちなどで止まっている時間も、走行時間に数えられます。</li><li>ゴールの時刻は、ゴール地点（スタートと反対側の端）に着いてこのアプリに戻った時刻です。ゴール地点に着いたら、すぐにこのアプリに戻ってください。</li><li>信号待ちの時間を計測から外したいときは、このアプリの画面を開いたまま走ってください。</li><li>安全のため、走行中のスマホ操作はしないでください。停車できる安全な場所で操作してください。</li></ul></details>
     <div id="goInfo" class="muted" style="margin-top:8px"></div>
     <button id="goBtn" class="btn g" style="width:100%;margin-top:10px">⏱ 計測スタート</button>
@@ -131,7 +131,7 @@ body.ended #missionCard,body.ended #mapCard,body.ended #goCard,body.ended #photo
     <div class="runtop"><h2 id="runTitle">SS</h2><div class="blink" id="runState">⏱ 計測中</div><button id="runCancel" class="btn r">やめる</button></div>
     <div class="runrow"><div class="timer" id="runSpeed">0<small> km/h</small></div><div class="runside"><div id="runSet"></div><div class="muted" id="runInfo"></div></div></div>
     <details class="runnote"><summary>⚠️ 注意事項・Googleマップのルール（タップで開く）</summary>
-    <div class="muted" style="margin:2px 0 8px;padding:6px 10px;border-radius:10px;background:#fff6dd;border:2px solid #e3ab2f;color:#6b4a00;line-height:1.5;font-size:13px">⚠️ 設定タイムは、AIが最短ルートをもとに決めた<b>参考タイム</b>です。必ずしも正確ではありません。SSの設定は高速道路を想定しておりません。<b>安全運転を心がけ、法定速度と交通ルールを守ってください。</b></div>
+    <div class="muted" style="margin:2px 0 8px;padding:6px 10px;border-radius:10px;background:#fff6dd;border:2px solid #e3ab2f;color:#6b4a00;line-height:1.5;font-size:13px">⚠️ 設定タイムは、AIが最短ルート（と、分かる範囲で道路の制限速度）をもとに決めた<b>参考タイム</b>です。必ずしも正確ではありません。SSの設定は高速道路を想定しておりません。<b>安全運転を心がけ、法定速度と交通ルールを守ってください。</b></div>
     <div class="muted" style="margin:6px 0 0;padding:6px 10px;border-radius:10px;background:#eef4ff;border:2px solid #7aa2e3;color:#1f3a63;line-height:1.5;font-size:13px">📍 Googleマップを使ったときは、ゴール地点に着いたらすぐこのアプリに戻ってください（戻った時刻がゴール時刻です）。</div>
     <div class="muted" style="margin:6px 0 0;padding:6px 10px;border-radius:10px;background:#eefaf0;border:2px solid #7ac28d;color:#1d4a2a;line-height:1.5;font-size:13px">🚦 信号などで止まっている間は、計測が止まります。走り出してから<b>7秒後</b>に計測が再開します（7秒のうちにまた止まったら、数え直します）。渋滞が続くときは、自動で渋滞モードになります。</div>
     </details>
@@ -140,7 +140,8 @@ body.ended #missionCard,body.ended #mapCard,body.ended #goCard,body.ended #photo
   <div id="mapCard" class="card">
     <div id="tapBar" class="hide"></div>
     <div style="display:flex;gap:8px;margin-bottom:8px"><button id="loc" class="btn" style="flex:1">📍 現在地へ</button><button id="fit" class="btn" style="flex:1">全体を見る</button></div>
-    <div id="map"></div>
+    <button id="huBtn" class="btn" type="button" style="width:100%;margin-bottom:8px">🧭 進行方向を上にする：オフ</button>
+    <div id="mapWrap"><div id="map"></div><div id="huUi"><div id="huN">N</div><button type="button" id="huIn" class="huZ" style="top:8px">＋</button><button type="button" id="huOut" class="huZ" style="top:60px">－</button><div id="huAttr">© Mapbox © OpenStreetMap／地理院タイル</div></div></div>
     <div id="gpsmsg" class="muted" style="margin-top:6px">現在地を測っています…</div>
   </div>
 
@@ -244,7 +245,28 @@ try { const p0 = localStorage.getItem('sampleTT_pace'); if (p0 && PACE[p0]) pace
 let paceBy = {};
 try { paceBy = JSON.parse(localStorage.getItem('sampleTT_paceBy') || '{}') || {}; } catch (e) { paceBy = {}; }
 const paceOf = s => { const i = course.ss.indexOf(s); const k = paceBy[i]; return PACE[k] ? k : pace; };
-const setSec = s => Math.round(s.dist / (PACE[paceOf(s)][1] / 3.6));
+/* 設定タイム：道路ごとの制限速度（prof）がある新しいSSは、区間ごとに計算します。prof がない（これまでに登録した）SSは、これまでどおり平均時速で計算します。
+   基準は「制限速度50km/hの道で、いまの平均時速（早め47／普通42／ゆっくり37）になる」こと。制限速度が30の道は遅く、60の道は速くなります。 */
+const REF_KMH = 50, MIN_KNOWN = 0.6;
+const roadSec = (prof, k) => { let t = 0; prof.forEach(q => { const v = Math.min(Math.max(q[1] || REF_KMH, 20), 70); t += q[0] / ((v * PACE[k][1] / REF_KMH) / 3.6); }); return t; };
+const setSec = s => { const k = paceOf(s); return Math.round(s.prof && s.prof.length ? roadSec(s.prof, k) : s.dist / (PACE[k][1] / 3.6)); };
+/* Mapboxの区間ごとの制限速度から、(メートル, km/h) の一覧を作ります。データが足りない・おかしいときは null（これまでの計算に戻します） */
+function buildProf(an, total) {
+  try {
+    const ds = an && an.distance, ms = an && an.maxspeed; if (!ds || !ms || ds.length !== ms.length || !ds.length) return null;
+    const prof = []; let known = 0, sum = 0;
+    for (let i = 0; i < ds.length; i++) {
+      const d = ds[i]; if (!(d >= 0)) return null; const m = ms[i];
+      const v = (m && typeof m.speed === 'number' && (!m.unit || m.unit === 'km/h')) ? m.speed : 0;
+      sum += d; if (v > 0) known += d; const last = prof[prof.length - 1];
+      if (last && last[1] === v) last[0] += d; else prof.push([d, v]);
+    }
+    if (sum <= 0 || known / sum < MIN_KNOWN) return null;
+    prof.forEach(q => { q[0] = Math.round(q[0]); });
+    const r = roadSec(prof, 'normal') / (sum / (PACE.normal[1] / 3.6)); if (!(r >= 0.6 && r <= 1.6)) return null;
+    return prof;
+  } catch (e) { return null; }
+}
 const SB_URL = 'https://ovlhlmxybldojwkndcxn.supabase.co', SB_KEY = 'sb_publishable_KgScZeXHt0aNftuGJSQTkw_V-xpJijP';
 const MB_TOKEN = 'pk.eyJ1IjoiZWFydGh0cnkiLCJhIjoiY213ZThxbjFuMDA1ODMwczZycGx3aG1vNyJ9.LPjkh9Fy1B6vgJIpbpe00g';
 let premium = false;
@@ -492,6 +514,7 @@ function initMap() {
   map.on('baselayerchange', ev => { try { localStorage.setItem('gp_basemap', ev.name); } catch (e) {} });
   layer = L.layerGroup().addTo(map);
   map.on('click', e => { if (tapMode) onTap(e.latlng.lat, e.latlng.lng); });
+  setTimeout(() => huSet(hu), 0);
 }
 function remainPts() {
   const r = [];
@@ -529,6 +552,7 @@ $('fit').onclick = () => {
 $('loc').onclick = () => {
   if (!fix || !map) { toast('現在地を測っています。'); return; }
   focus = null; focusWait = false; renderStrip(); drawMap();
+  if (hu) { map.setView([fix.lat, fix.lon], 16, { animate: false }); return; }
   const rp = remainPts(); if (rp.length) fitTo(rp.concat([[fix.lat, fix.lon]]), 17); else map.setView([fix.lat, fix.lon], 15);
 };
 
@@ -547,6 +571,41 @@ function showFocus(scroll) {
 }
 let noAutoScrollUntil = 0;
 function scrollToMission() { noAutoScrollUntil = Date.now() + 4000; const go = () => { try { const g = $('goCard'); (g && !g.classList.contains('hide') ? g : $('map')).scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* noop */ } }; setTimeout(go, 80); setTimeout(go, 600); }
+
+
+/* ---------- 進行方向を上にする地図（CSSで地図を回す） ---------- */
+let hu = false, hdg = 0, hdgAcc = 0, lastHp = null;
+try { hu = localStorage.getItem('gp_hu') === '1'; } catch (e) { /* noop */ }
+function huSize() {
+  const w = $('mapWrap'), m = $('map'); if (!w || !m) return;
+  if (!hu) { m.style.cssText = ''; w.style.removeProperty('--hdg'); if (map) map.invalidateSize(); return; }
+  const W = w.clientWidth, H = w.clientHeight, D = Math.ceil(Math.sqrt(W * W + H * H)) + 4;
+  m.style.width = D + 'px'; m.style.height = D + 'px'; m.style.left = ((W - D) / 2) + 'px'; m.style.top = ((H - D) / 2) + 'px'; m.style.transformOrigin = '50% 50%';
+  huRot(); if (map) { map.invalidateSize(); if (fix) map.setView([fix.lat, fix.lon], map.getZoom(), { animate: false }); }
+}
+function huRot() {
+  const w = $('mapWrap'), m = $('map'); if (!hu || !w || !m) return;
+  m.style.transform = 'rotate(' + (-hdgAcc) + 'deg)'; w.style.setProperty('--hdg', hdgAcc + 'deg'); $('huN').style.transform = 'rotate(' + (-hdgAcc) + 'deg)';
+}
+function huSet(on) {
+  if (on && tapMode) { toast('地点を決めている間は、進行方向を上にできません。'); return; }
+  hu = on; try { localStorage.setItem('gp_hu', on ? '1' : '0'); } catch (e) { /* noop */ }
+  $('mapWrap').classList.toggle('hu', hu); $('huBtn').textContent = '🧭 進行方向を上にする：' + (hu ? 'オン' : 'オフ'); $('huBtn').classList.toggle('g', hu);
+  if (map) { if (hu) { map.dragging.disable(); map.touchZoom.disable(); map.doubleClickZoom.disable(); map.boxZoom.disable(); } else { map.dragging.enable(); map.touchZoom.enable(); map.doubleClickZoom.enable(); map.boxZoom.enable(); } }
+  huSize(); if (hu && map && fix) map.setView([fix.lat, fix.lon], Math.max(map.getZoom(), 15), { animate: false });
+}
+function huFix(c) {
+  if (!hu) return; let h = null;
+  if (typeof c.heading === 'number' && isFinite(c.heading) && typeof c.speed === 'number' && c.speed > 1.5) h = c.heading;
+  else if (lastHp) { if (dist(lastHp[0], lastHp[1], c.latitude, c.longitude) >= 12) { h = brg(lastHp, [c.latitude, c.longitude]); lastHp = [c.latitude, c.longitude]; } }
+  else lastHp = [c.latitude, c.longitude];
+  if (h !== null) { lastHp = [c.latitude, c.longitude]; hdg = h; hdgAcc += angDiff(((hdgAcc % 360) + 360) % 360, hdg) * 0.35; huRot(); }
+  if (map && fix) map.setView([fix.lat, fix.lon], map.getZoom(), { animate: false });
+}
+$('huBtn').onclick = () => huSet(!hu);
+$('huIn').onclick = () => { if (map) map.setZoom(map.getZoom() + 1); };
+$('huOut').onclick = () => { if (map) map.setZoom(map.getZoom() - 1); };
+window.addEventListener('resize', () => { if (hu) huSize(); });
 
 /* ---------- コース登録（地図をタップ） ---------- */
 $('setupBtn').onclick = () => { if (day && day.fin) { toast('ミッション終了後は、コースを変えられません。「次のミッションを開始する」を押してください。'); return; } if (tapMode) { cancelTap(); setupOpen = false; renderAll(); return; } setupOpen = !setupOpen; renderAll(); };
@@ -567,7 +626,7 @@ function cancelTap() {
 }
 function beginTap(k, i) {
   if (!map) return; tapPrev = { k, i: i || 0, v: k === 'goal' ? course.goal : course[k][i || 0] };
-  tapMode = k; tapIdx = i || 0; tmpA = null; focus = null; if (k === 'goal') course.goal = null; else course[k][tapIdx] = null;
+  if (hu) huSet(false); tapMode = k; tapIdx = i || 0; tmpA = null; focus = null; if (k === 'goal') course.goal = null; else course[k][tapIdx] = null;
   tapBarRender();
   if (fix && !fitted) map.setView([fix.lat, fix.lon], 14);
   $('map').scrollIntoView({ behavior: 'smooth', block: 'center' }); renderAll();
@@ -577,12 +636,12 @@ async function onTap(lat, lon) {
   if (k === 'ss') {
     if (!tmpA) { tmpA = [lat, lon]; tapBarRender(); drawMap(); return; }
     const a = tmpA, b = [lat, lon]; tapMode = null; tmpA = null; tapPrev = null; bar('道のりを計算しています…');
-    let d = dist(a[0], a[1], b[0], b[1]) * 1.3, sec = d / (FALLBACK_KMH / 3.6), line = null;
+    let d = dist(a[0], a[1], b[0], b[1]) * 1.3, sec = d / (FALLBACK_KMH / 3.6), line = null, prof = null;
     try {
-      const r = await fetch('https://api.mapbox.com/directions/v5/mapbox/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson&access_token=' + MB_TOKEN); const j = await r.json();
-      if (j.routes && j.routes[0]) { d = j.routes[0].distance; sec = j.routes[0].duration; line = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); }
+      const r = await fetch('https://api.mapbox.com/directions/v5/mapbox/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson&annotations=distance,maxspeed&access_token=' + MB_TOKEN); const j = await r.json();
+      if (j.routes && j.routes[0]) { d = j.routes[0].distance; sec = j.routes[0].duration; line = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); try { prof = buildProf(j.routes[0].legs && j.routes[0].legs[0] && j.routes[0].legs[0].annotation, d); } catch (e) { prof = null; } }
     } catch (e) { /* 通信できないときは、直線×1.3と時速40kmで計算 */ }
-    course.ss[idx] = { a, b, dist: d, sec: Math.max(30, Math.round(sec)), line }; saveCourse(); bar(''); toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(d) + '／設定タイム ' + fmtS(setSec(course.ss[idx])));
+    course.ss[idx] = { a, b, dist: d, sec: Math.max(30, Math.round(sec)), line }; if (prof) course.ss[idx].prof = prof; saveCourse(); bar(''); toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(d) + '／設定タイム ' + fmtS(setSec(course.ss[idx])));
   } else if (k === 'goal') { course.goal = [lat, lon]; tapMode = null; tapPrev = null; saveCourse(); bar(''); toast('✅ ゴールを登録しました'); }
   else if (k) { course[k][idx] = [lat, lon]; tapMode = null; tapPrev = null; saveCourse(); bar(''); toast('✅ ' + LAB[k] + (idx + 1) + 'を登録しました'); }
   fitted = false; renderAll();
@@ -749,7 +808,8 @@ function onFix(c) {
   const v = calcSpeed(c); if (v !== null) { spd = spd * 0.2 + v * 0.8; if (run) updateMove(); }
   const fp = focusPos(); $('gpsmsg').textContent = '現在地を取得中（精度 約' + Math.round(c.accuracy) + 'm）' + (fp ? '　目標まで ' + fmtD(dist(fix.lat, fix.lon, fp[0], fp[1])) : '');
   if (me) me.setLatLng([fix.lat, fix.lon]); else if (map) me = L.circleMarker([fix.lat, fix.lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#1768c8', fillOpacity: 1 }).addTo(map);
-  if (map && focusWait && focus && !day.fin) showFocus(false);
+  if (map && focusWait && focus && !day.fin && !hu) showFocus(false);
+  huFix(c);
   if (map && !centeredOnce && !fitted && !anyReg() && !course.goal && !tapMode) { centeredOnce = true; map.setView([fix.lat, fix.lon], 14); }
   if (c.accuracy <= ACC) {
     ['historic'].forEach(k => regs(k).forEach(i => { if (!day[k][i] && !day.fin && dist(fix.lat, fix.lon, course[k][i][0], course[k][i][1]) <= NEAR) { day[k][i] = true; saveDay(); winMark(false); pop(LAB[k] + (i + 1) + ' 到着', PT); renderAll(); } }));
