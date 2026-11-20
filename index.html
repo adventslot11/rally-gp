@@ -249,7 +249,8 @@ const paceOf = s => { const i = course.ss.indexOf(s); const k = paceBy[i]; retur
    基準は「制限速度50km/hの道で、いまの平均時速（早め47／普通42／ゆっくり37）になる」こと。制限速度が30の道は遅く、60の道は速くなります。 */
 const REF_KMH = 50, MIN_KNOWN = 0.6;
 const roadSec = (prof, k) => { let t = 0; prof.forEach(q => { const v = Math.min(Math.max(q[1] || REF_KMH, 20), 70); t += q[0] / ((v * PACE[k][1] / REF_KMH) / 3.6); }); return t; };
-const setSec = s => { const k = paceOf(s); return Math.round(s.prof && s.prof.length ? roadSec(s.prof, k) : s.dist / (PACE[k][1] / 3.6)); };
+const setSecK = (s, k) => Math.round(s.prof && s.prof.length ? roadSec(s.prof, k) : s.dist / (PACE[k][1] / 3.6));
+const setSec = s => setSecK(s, paceOf(s));
 /* Mapboxの区間ごとの制限速度から、(メートル, km/h) の一覧を作ります。データが足りない・おかしいときは null（これまでの計算に戻します） */
 function buildProf(an, total) {
   try {
@@ -496,7 +497,7 @@ function showCertificate() {
 
 /* ---------- 地図 ---------- */
 let centeredOnce = false;
-let map = null, layer = null, me = null, fix = null, fitted = false, tapMode = null, tapIdx = 0, tmpA = null, focus = null, focusWait = false;
+let map = null, layer = null, candLayer = null, me = null, fix = null, fitted = false, tapMode = null, tapIdx = 0, tmpA = null, focus = null, focusWait = false;
 function pinHtml(color, text) { return '<div style="position:relative;width:28px;height:36px"><div style="position:absolute;left:0;top:0;width:24px;height:24px;margin:2px;box-sizing:border-box;background:' + color + ';border:2px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 5px #0007"></div><div style="position:absolute;left:2px;top:2px;width:24px;height:24px;line-height:24px;text-align:center;color:#fff;font-weight:800;font-size:11px">' + (text || '') + '</div></div>'; }
 const pin = (c, t) => L.divIcon({ className: '', html: pinHtml(c, t), iconSize: [28, 36], iconAnchor: [14, 34] });
 function initMap() {
@@ -512,7 +513,7 @@ function initMap() {
   baseMaps[baseKey].addTo(map);
   L.control.layers(baseMaps, null, { position: 'topright', collapsed: true }).addTo(map);
   map.on('baselayerchange', ev => { try { localStorage.setItem('gp_basemap', ev.name); } catch (e) {} });
-  layer = L.layerGroup().addTo(map);
+  layer = L.layerGroup().addTo(map); candLayer = L.layerGroup().addTo(map);
   map.on('click', e => { if (tapMode) onTap(e.latlng.lat, e.latlng.lng); });
   setTimeout(() => huSet(hu), 0);
 }
@@ -536,6 +537,7 @@ function drawMap() {
   const onlySS = focus && focus.k === 'ss' ? focus.i : null;
   regs('ss').forEach(i => { if (onlySS !== null && i !== onlySS) return; const s = course.ss[i], c = day.ss[i] ? '#9aa0a6' : COL.ss; L.marker(s.a, { icon: pin(c, (i + 1) + 'A') }).addTo(layer); L.marker(s.b, { icon: pin(c, (i + 1) + 'B') }).addTo(layer); L.polyline(s.line || [s.a, s.b], { color: c, weight: 5, opacity: .85 }).addTo(layer); b.push(s.a, s.b); });
   if (tmpA && tapMode === 'ss') L.marker(tmpA, { icon: pin(COL.ss, (tapIdx + 1) + 'A') }).addTo(layer);
+  if (ssPick && tapMode === 'ss') L.marker(ssPick.b, { icon: pin(COL.ss, (tapIdx + 1) + 'B') }).addTo(layer);
   { let inb = null;
     if (onlySS !== null && course.ss[onlySS]) { const q = course.ss[onlySS], P = [q.a, q.b]; if (q.line) q.line.forEach(p => P.push(p)); if (fix) P.push([fix.lat, fix.lon]);
       const la = P.map(p => p[0]), lo = P.map(p => p[1]), dla = (Math.max(...la) - Math.min(...la)) * 0.15 + 0.002, dlo = (Math.max(...lo) - Math.min(...lo)) * 0.15 + 0.002;
@@ -613,6 +615,7 @@ function bar(t) { const d = $('tapBar'); if (tapMode) { tapBarRender(); return; 
 let tapPrev = null;
 function tapBarRender() {
   const d = $('tapBar'); if (!tapMode) { d.innerHTML = ''; d.classList.add('hide'); return; }
+  if (tapMode === 'ss' && ssPick) { pickBarRender(d); return; }
   const k = tapMode, t = k === 'ss' ? (tmpA ? '👆 次は、SS' + (tapIdx + 1) + 'のゴール地点「B」をタップしてください' : '👆 地図をタップして、SS' + (tapIdx + 1) + 'のスタート地点「A」を選んでください') : '👆 地図をタップして、' + LAB[k] + (k === 'goal' ? '' : (tapIdx + 1)) + 'の場所を選んでください';
   d.innerHTML = '<div class="tt"></div>' + (k === 'ss' && tmpA ? '<button type="button" class="btn" id="tapRedoA">↩ A地点を選び直す</button>' : '') + '<button type="button" class="btn r" id="tapCancel">✕ キャンセル</button>';
   d.firstChild.textContent = t; d.classList.remove('hide');
@@ -620,32 +623,107 @@ function tapBarRender() {
   $('tapCancel').onclick = cancelTap;
 }
 function cancelTap() {
-  if (!tapMode) return; const p = tapPrev; tapMode = null; tmpA = null;
+  if (!tapMode) return; const p = tapPrev; tapMode = null; tmpA = null; ssPick = null; clearCands();
   if (p) { if (p.k === 'goal') course.goal = p.v; else course[p.k][p.i] = p.v; saveCourse(); }
   tapPrev = null; bar(''); fitted = false; renderAll(); toast('登録をキャンセルしました（元の内容に戻しました）');
 }
 function beginTap(k, i) {
   if (!map) return; tapPrev = { k, i: i || 0, v: k === 'goal' ? course.goal : course[k][i || 0] };
-  if (hu) huSet(false); tapMode = k; tapIdx = i || 0; tmpA = null; focus = null; if (k === 'goal') course.goal = null; else course[k][tapIdx] = null;
+  if (hu) huSet(false); ssPick = null; clearCands(); tapMode = k; tapIdx = i || 0; tmpA = null; focus = null; if (k === 'goal') course.goal = null; else course[k][tapIdx] = null;
   tapBarRender();
   if (fix && !fitted) map.setView([fix.lat, fix.lon], 14);
   $('map').scrollIntoView({ behavior: 'smooth', block: 'center' }); renderAll();
 }
 async function onTap(lat, lon) {
   const k = tapMode, idx = tapIdx;
+  if (k === 'ss' && ssPick) { if (ssPick.mode === 'via') { if (!ssPick.busy) addVia(lat, lon); } else if (!ssPick.busy) toast('色のついた線をタップして、ルートを決めてください。'); return; }
   if (k === 'ss') {
     if (!tmpA) { tmpA = [lat, lon]; tapBarRender(); drawMap(); return; }
-    const a = tmpA, b = [lat, lon]; tapMode = null; tmpA = null; tapPrev = null; bar('道のりを計算しています…');
-    let d = dist(a[0], a[1], b[0], b[1]) * 1.3, sec = d / (FALLBACK_KMH / 3.6), line = null, prof = null;
-    try {
-      const r = await fetch('https://api.mapbox.com/directions/v5/mapbox/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson&annotations=distance,maxspeed&access_token=' + MB_TOKEN); const j = await r.json();
-      if (j.routes && j.routes[0]) { d = j.routes[0].distance; sec = j.routes[0].duration; line = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); try { prof = buildProf(j.routes[0].legs && j.routes[0].legs[0] && j.routes[0].legs[0].annotation, d); } catch (e) { prof = null; } }
-    } catch (e) { /* 通信できないときは、直線×1.3と時速40kmで計算 */ }
-    course.ss[idx] = { a, b, dist: d, sec: Math.max(30, Math.round(sec)), line }; if (prof) course.ss[idx].prof = prof; saveCourse(); bar(''); toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(d) + '／設定タイム ' + fmtS(setSec(course.ss[idx])));
+    startPick(idx, tmpA, [lat, lon]); return;
   } else if (k === 'goal') { course.goal = [lat, lon]; tapMode = null; tapPrev = null; saveCourse(); bar(''); toast('✅ ゴールを登録しました'); }
   else if (k) { course[k][idx] = [lat, lon]; tapMode = null; tapPrev = null; saveCourse(); bar(''); toast('✅ ' + LAB[k] + (idx + 1) + 'を登録しました'); }
   fitted = false; renderAll();
 }
+
+/* ---------- SSのルートを決める（候補2本から選ぶ／経由地で引き直す） ---------- */
+let ssPick = null;
+const ROUTE_COL = ['#1768c8', '#e07b00'], ROUTE_ICO = ['🔵', '🟠'], VIA_COL = '#7b3fd1', MAX_VIA = 3;
+const paceKFor = idx => (PACE[paceBy[idx]] ? paceBy[idx] : pace);
+function clearCands() { try { if (candLayer) candLayer.clearLayers(); } catch (e) { /* noop */ } }
+function mergeAnn(legs) {
+  const o = { distance: [], maxspeed: [] };
+  for (const lg of legs || []) { const an = lg.annotation; if (!an || !an.distance || !an.maxspeed) return null; an.distance.forEach(x => o.distance.push(x)); an.maxspeed.forEach(x => o.maxspeed.push(x)); }
+  return o;
+}
+async function fetchRoutes(pts, alt) {
+  const cs = pts.map(c => c[1] + ',' + c[0]).join(';');
+  const r = await fetch('https://api.mapbox.com/directions/v5/mapbox/driving/' + cs + '?overview=full&geometries=geojson&annotations=distance,maxspeed' + (alt ? '&alternatives=true' : '') + '&access_token=' + MB_TOKEN);
+  const j = await r.json(); if (!j.routes || !j.routes.length) return [];
+  return j.routes.slice(0, alt ? 2 : 1).map(rt => { let prof = null; try { prof = buildProf(mergeAnn(rt.legs), rt.distance); } catch (e) { prof = null; }
+    return { dist: rt.distance, sec: rt.duration, line: rt.geometry.coordinates.map(c => [c[1], c[0]]), prof }; });
+}
+function finishSS(idx, a, b, r, via) {
+  clearCands(); ssPick = null; tapMode = null; tmpA = null; tapPrev = null;
+  const it = { a, b, dist: r.dist, sec: Math.max(30, Math.round(r.sec)), line: r.line }; if (r.prof) it.prof = r.prof; if (via && via.length) it.via = via;
+  course.ss[idx] = it; saveCourse(); bar('');
+  toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(it.dist) + '／設定タイム ' + fmtS(setSec(it)));
+  fitted = false; renderAll();
+}
+async function startPick(idx, a, b) {
+  const pk = ssPick = { idx, a, b, routes: [], via: [], mode: 'choose', custom: null, busy: true };
+  tapBarRender(); drawMap();
+  let rs = []; try { rs = await fetchRoutes([a, b], true); } catch (e) { rs = []; }
+  if (ssPick !== pk) return; pk.busy = false;
+  if (!rs.length) { const d = dist(a[0], a[1], b[0], b[1]) * 1.3; finishSS(idx, a, b, { dist: d, sec: d / (FALLBACK_KMH / 3.6), line: null, prof: null }, null); return; }   /* 通信できないときは、これまでどおり直線×1.3と時速40kmで計算 */
+  pk.routes = rs; drawCands(pk, true); tapBarRender();
+}
+function drawCands(pk, fit) {
+  if (!map || !candLayer) return; clearCands(); const all = [], via = pk.mode === 'via';
+  pk.routes.forEach((r, i) => {
+    if (!r.line) return; all.push.apply(all, r.line);
+    if (via) { L.polyline(r.line, { color: ROUTE_COL[i], weight: 4, opacity: .3, interactive: false }).addTo(candLayer); return; }
+    const pick = () => { if (ssPick === pk && pk.mode === 'choose' && !pk.busy) finishSS(pk.idx, pk.a, pk.b, r, null); };
+    L.polyline(r.line, { color: ROUTE_COL[i], weight: 6, opacity: .9, interactive: false }).addTo(candLayer);
+    L.polyline(r.line, { color: '#000', weight: 26, opacity: .01, bubblingMouseEvents: false }).on('click', pick).bindTooltip('ルート' + (i + 1) + '　' + fmtD(r.dist), { sticky: true }).addTo(candLayer);
+  });
+  if (via && pk.custom && pk.custom.line) { all.push.apply(all, pk.custom.line); L.polyline(pk.custom.line, { color: VIA_COL, weight: 7, opacity: .95, interactive: false }).addTo(candLayer); }
+  if (via) pk.via.forEach((v, i) => L.marker(v, { icon: pin(VIA_COL, String(i + 1)) }).addTo(candLayer));
+  if (fit && all.length > 1) { try { map.fitBounds(L.latLngBounds(all), { padding: [30, 30], maxZoom: 17 }); } catch (e) { /* noop */ } }
+}
+async function recalcVia(pk) {
+  pk.busy = true; tapBarRender();
+  let rs = []; try { rs = await fetchRoutes([pk.a].concat(pk.via, [pk.b]), false); } catch (e) { rs = []; }
+  if (ssPick !== pk) return; pk.busy = false;
+  if (!rs.length) { pk.via.pop(); toast('その場所を通るルートを引けませんでした。別の場所をタップしてください。'); try { if (pk.via.length) { pk.busy = true; const r2 = await fetchRoutes([pk.a].concat(pk.via, [pk.b]), false); if (ssPick !== pk) return; pk.custom = r2[0] || null; pk.busy = false; } else pk.custom = null; } catch (e) { pk.busy = false; } }
+  else pk.custom = rs[0];
+  drawCands(pk, false); tapBarRender();
+}
+function addVia(lat, lon) { const pk = ssPick; if (!pk || pk.busy) return; if (pk.via.length >= MAX_VIA) { toast('経由地は' + MAX_VIA + 'か所までです。'); return; } pk.via.push([lat, lon]); drawCands(pk, false); recalcVia(pk); }
+function pickBarRender(d) {
+  const pk = ssPick, K = paceKFor(pk.idx); let t, h = '';
+  if (pk.busy) t = '⏳ ルートを計算しています…';
+  else if (pk.mode === 'choose') {
+    t = pk.routes.length > 1 ? '👆 ルートの候補を2本出しました。通りたい線をタップして決めてください（下のボタンでも決められます）' : '👆 ルートの候補は1本でした。線をタップして決めるか、「どちらでもない」で通りたい道を指定してください';
+    pk.routes.forEach((r, i) => { h += '<button type="button" class="btn" data-rt="' + i + '" style="border-color:' + ROUTE_COL[i] + '">' + ROUTE_ICO[i] + ' ルート' + (i + 1) + '：' + fmtD(r.dist) + '／設定 ' + fmtS(setSecK(r, K)) + '</button>'; });
+    h += '<button type="button" class="btn" id="pkVia">🗺 どちらでもない（経由地を指定）</button><button type="button" class="btn" id="pkRedoB">↩ B地点を選び直す</button><button type="button" class="btn" id="pkRedoA">↩ A地点から選び直す</button>';
+  } else {
+    t = '👆 通りたい道の途中を、地図でタップしてください（経由地 ' + pk.via.length + '／' + MAX_VIA + '）。タップするたびに、新しい線（紫）を引きます。';
+    if (pk.custom) h += '<button type="button" class="btn g" id="pkOk">✅ 紫のルートに決定：' + fmtD(pk.custom.dist) + '／設定 ' + fmtS(setSecK(pk.custom, K)) + '</button>';
+    if (pk.via.length) h += '<button type="button" class="btn" id="pkUndo">↩ 経由地を1つ戻す</button>';
+    h += '<button type="button" class="btn" id="pkBack">◀ 候補に戻る</button>';
+  }
+  d.innerHTML = '<div class="tt"></div>' + h + '<button type="button" class="btn r" id="tapCancel">✕ キャンセル</button>'; d.firstChild.textContent = t; d.classList.remove('hide');
+  const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
+  d.querySelectorAll('[data-rt]').forEach(b => { b.onclick = () => { if (pk.busy || ssPick !== pk) return; const r = pk.routes[+b.dataset.rt]; if (r) finishSS(pk.idx, pk.a, pk.b, r, null); }; });
+  on('pkVia', () => { pk.mode = 'via'; pk.via = []; pk.custom = null; drawCands(pk, false); tapBarRender(); });
+  on('pkBack', () => { pk.mode = 'choose'; pk.via = []; pk.custom = null; drawCands(pk, false); tapBarRender(); });
+  on('pkOk', () => { if (!pk.busy && pk.custom) finishSS(pk.idx, pk.a, pk.b, pk.custom, pk.via.slice()); });
+  on('pkUndo', () => { if (pk.busy) return; pk.via.pop(); if (pk.via.length) { drawCands(pk, false); recalcVia(pk); } else { pk.custom = null; drawCands(pk, false); tapBarRender(); } });
+  on('pkRedoB', () => { ssPick = null; clearCands(); tapBarRender(); drawMap(); });
+  on('pkRedoA', () => { ssPick = null; clearCands(); tmpA = null; tapBarRender(); drawMap(); });
+  on('tapCancel', cancelTap);
+}
+
 const btnS = 'style="min-height:40px;font-size:14px;padding:0 10px"';
 let setupOpen = null;
 try { const p = JSON.parse(localStorage.getItem('sampleTT_profile') || 'null'); if (p) { $('nick').value = p.nick || ''; $('veh').value = p.veh || ''; } } catch (e) { /* noop */ }
