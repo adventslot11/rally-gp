@@ -71,7 +71,7 @@ h2{font-size:19px;font-weight:900;color:#223a6b}
 .m.done{background:linear-gradient(180deg,#ffe48a,#ffc933);color:#5a3d00;text-shadow:none;border-color:#a77700;box-shadow:0 4px 0 #a77700}.m.done .n{color:#5a3d00}
 .m.done::after{content:"⭐";position:absolute;right:6px;top:2px;font-size:15px}.m{position:relative}
 .step{border-top:2px dashed var(--line)}
-#tapBar{border-radius:14px}
+#tapBar{border-radius:14px;z-index:1100}#tapBar.pk{padding:8px 10px;gap:6px}#tapBar.pk .tt{font-size:14px;line-height:1.4}#tapBar.pk button{min-height:38px;font-size:13px;padding:0 10px}
 .plan{font-weight:900}
 .reward-overlay{backdrop-filter:blur(4px)}
 @keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
@@ -614,7 +614,7 @@ $('setupBtn').onclick = () => { if (day && day.fin) { toast('ミッション終�
 function bar(t) { const d = $('tapBar'); if (tapMode) { tapBarRender(); return; } d.textContent = t || ''; d.classList.toggle('hide', !t); }
 let tapPrev = null;
 function tapBarRender() {
-  const d = $('tapBar'); if (!tapMode) { d.innerHTML = ''; d.classList.add('hide'); return; }
+  const d = $('tapBar'); d.classList.remove('pk'); if (!tapMode) { d.innerHTML = ''; d.classList.add('hide'); return; }
   if (tapMode === 'ss' && ssPick) { pickBarRender(d); return; }
   const k = tapMode, t = k === 'ss' ? (tmpA ? '👆 次は、SS' + (tapIdx + 1) + 'のゴール地点「B」をタップしてください' : '👆 地図をタップして、SS' + (tapIdx + 1) + 'のスタート地点「A」を選んでください') : '👆 地図をタップして、' + LAB[k] + (k === 'goal' ? '' : (tapIdx + 1)) + 'の場所を選んでください';
   d.innerHTML = '<div class="tt"></div>' + (k === 'ss' && tmpA ? '<button type="button" class="btn" id="tapRedoA">↩ A地点を選び直す</button>' : '') + '<button type="button" class="btn r" id="tapCancel">✕ キャンセル</button>';
@@ -669,16 +669,35 @@ function finishSS(idx, a, b, r, via) {
   toast('✅ SS' + (idx + 1) + 'を登録しました　' + fmtD(it.dist) + '／設定タイム ' + fmtS(setSec(it)));
   fitted = false; renderAll();
 }
+
+/* 候補が1本しか返ってこないとき、別の道を通る候補をもう1本さがします（進行方向の左右に経由地をずらして引く） */
+function ptSegM(p, a, b) { const k = Math.cos(p[0] * Math.PI / 180), ax = (a[1] - p[1]) * k * 111320, ay = (a[0] - p[0]) * 111320, bx = (b[1] - p[1]) * k * 111320, by = (b[0] - p[0]) * 111320, dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy; let t = L2 ? -(ax * dx + ay * dy) / L2 : 0; t = Math.max(0, Math.min(1, t)); const x = ax + t * dx, y = ay + t * dy; return Math.sqrt(x * x + y * y); }
+function nearLineM(p, line) { let m = 1e9; for (let i = 0; i < line.length - 1; i++) { const d = ptSegM(p, line[i], line[i + 1]); if (d < m) m = d; if (m < 5) break; } return m; }
+function overlapFrac(cand, main) { const n = cand.length, st = Math.max(1, Math.floor(n / 150)); let tot = 0, near = 0; for (let i = 0; i < n; i += st) { tot++; if (nearLineM(cand[i], main) < 30) near++; } return tot ? near / tot : 1; }
+async function extraRoute(a, b, main) {
+  if (!main.line || main.line.length < 2) return null;
+  const half = main.dist / 2; let acc = 0, mi = Math.floor(main.line.length / 2);
+  for (let i = 0; i < main.line.length - 1; i++) { acc += dist(main.line[i][0], main.line[i][1], main.line[i + 1][0], main.line[i + 1][1]); if (acc >= half) { mi = i; break; } }
+  const m = main.line[mi], k = Math.cos(m[0] * Math.PI / 180), dx = (b[1] - a[1]) * k, dy = b[0] - a[0], len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const off = Math.min(2500, Math.max(300, dist(a[0], a[1], b[0], b[1]) * 0.35)) / 111320;
+  const vias = [[m[0] + (dx / len) * off, m[1] + (-dy / len) * off / k], [m[0] - (dx / len) * off, m[1] - (-dy / len) * off / k]];
+  const rs = await Promise.all(vias.map(v => fetchRoutes([a, v, b], false).then(x => x[0] || null).catch(() => null)));
+  const ok = rs.filter(r => r && r.line && r.dist <= main.dist * 2 && r.dist >= main.dist * 0.8 && overlapFrac(r.line, main.line) < 0.75).sort((x, y) => x.dist - y.dist);
+  return ok[0] || null;
+}
 async function startPick(idx, a, b) {
-  const pk = ssPick = { idx, a, b, routes: [], via: [], mode: 'choose', custom: null, busy: true };
+  const pk = ssPick = { idx, a, b, routes: [], via: [], mode: 'choose', custom: null, busy: true, prev: (tapPrev && tapPrev.k === 'ss' && tapPrev.v && tapPrev.v.line) ? tapPrev.v.line : null };
   tapBarRender(); drawMap();
   let rs = []; try { rs = await fetchRoutes([a, b], true); } catch (e) { rs = []; }
-  if (ssPick !== pk) return; pk.busy = false;
+  if (ssPick !== pk) return; if (rs.length) { pk.busy = true; } else pk.busy = false;
   if (!rs.length) { const d = dist(a[0], a[1], b[0], b[1]) * 1.3; finishSS(idx, a, b, { dist: d, sec: d / (FALLBACK_KMH / 3.6), line: null, prof: null }, null); return; }   /* 通信できないときは、これまでどおり直線×1.3と時速40kmで計算 */
+  if (rs.length >= 2) pk.busy = false;
+  if (rs.length < 2) { try { const x = await extraRoute(a, b, rs[0]); if (ssPick !== pk) return; if (x) rs.push(x); } catch (e) { /* noop */ } pk.busy = false; }
   pk.routes = rs; drawCands(pk, true); tapBarRender();
 }
 function drawCands(pk, fit) {
   if (!map || !candLayer) return; clearCands(); const all = [], via = pk.mode === 'via';
+  if (pk.prev) { L.polyline(pk.prev, { color: COL.ss, weight: 4, opacity: .85, dashArray: '2 8', interactive: false }).addTo(candLayer); all.push.apply(all, pk.prev); }
   pk.routes.forEach((r, i) => {
     if (!r.line) return; all.push.apply(all, r.line);
     if (via) { L.polyline(r.line, { color: ROUTE_COL[i], weight: 4, opacity: .3, interactive: false }).addTo(candLayer); return; }
@@ -700,10 +719,10 @@ async function recalcVia(pk) {
 }
 function addVia(lat, lon) { const pk = ssPick; if (!pk || pk.busy) return; if (pk.via.length >= MAX_VIA) { toast('経由地は' + MAX_VIA + 'か所までです。'); return; } pk.via.push([lat, lon]); drawCands(pk, false); recalcVia(pk); }
 function pickBarRender(d) {
-  const pk = ssPick, K = paceKFor(pk.idx); let t, h = '';
+  const pk = ssPick, K = paceKFor(pk.idx); let t, h = ''; d.classList.add('pk');
   if (pk.busy) t = '⏳ ルートを計算しています…';
   else if (pk.mode === 'choose') {
-    t = pk.routes.length > 1 ? '👆 ルートの候補を2本出しました。通りたい線をタップして決めてください（下のボタンでも決められます）' : '👆 ルートの候補は1本でした。線をタップして決めるか、「どちらでもない」で通りたい道を指定してください';
+    t = (pk.routes.length > 1 ? '👆 候補を2本出しました。通りたい線をタップして決めてください（ボタンでも決められます）' : '👆 候補は1本でした（別の道は見つかりませんでした）。線をタップして決めるか、「どちらでもない」で道を指定してください') + (pk.prev ? '　赤の点線は、いままでのルートです。' : '');
     pk.routes.forEach((r, i) => { h += '<button type="button" class="btn" data-rt="' + i + '" style="border-color:' + ROUTE_COL[i] + '">' + ROUTE_ICO[i] + ' ルート' + (i + 1) + '：' + fmtD(r.dist) + '／設定 ' + fmtS(setSecK(r, K)) + '</button>'; });
     h += '<button type="button" class="btn" id="pkVia">🗺 どちらでもない（経由地を指定）</button><button type="button" class="btn" id="pkRedoB">↩ B地点を選び直す</button><button type="button" class="btn" id="pkRedoA">↩ A地点から選び直す</button>';
   } else {
